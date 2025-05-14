@@ -1,4 +1,4 @@
-from .utils.exceptions.http_exception import HttpException
+from .common.exceptions.http_exception import HttpException
 from marshmallow import ValidationError
 from .dtos.error_response_body import ErrorResponseBody
 

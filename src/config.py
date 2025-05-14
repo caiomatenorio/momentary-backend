@@ -1,12 +1,11 @@
 import os
-from .utils.errors.env_not_defined_error import EnvNotDefinedError
+from .common.errors.env_not_defined_error import EnvNotDefinedError
 from dotenv import load_dotenv
 from flask import Flask, Blueprint
 from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
 from flask_marshmallow import Marshmallow
-from .utils.exceptions.http_exception import HttpException
+from .common.exceptions.http_exception import HttpException
 from .error_handler import handle_http_exception, handle_validation_error
 from marshmallow import ValidationError
 
@@ -21,7 +20,7 @@ def get_env_var(key: str) -> str:
     return value
 
 
-def create_app(db: SQLAlchemy, socketio: SocketIO, ma: Marshmallow, bp: Blueprint) -> Flask:
+def create_app(db: SQLAlchemy, socketio: SocketIO, marshmallow: Marshmallow, bp: Blueprint) -> Flask:
     app = Flask(__name__)
 
     app.config["SQLALCHEMY_DATABASE_URI"] = get_env_var("DB_URL")
@@ -31,7 +30,7 @@ def create_app(db: SQLAlchemy, socketio: SocketIO, ma: Marshmallow, bp: Blueprin
     # Initialize extensions
     db.init_app(app)
     socketio.init_app(app)
-    ma.init_app(app)
+    marshmallow.init_app(app)
     app.register_blueprint(bp)
 
     # Register error handlers
@@ -44,18 +43,3 @@ def create_app(db: SQLAlchemy, socketio: SocketIO, ma: Marshmallow, bp: Blueprin
         print("Database tables created.")
 
     return app
-
-
-# SQLAlchemy
-class Base(DeclarativeBase):
-    pass
-db = SQLAlchemy(model_class=Base)
-
-# SocketIO
-socketio = SocketIO()
-
-# Marshmallow
-ma = Marshmallow()
-
-# Blueprint
-api_bp = Blueprint("api", __name__, url_prefix="/api")

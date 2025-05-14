@@ -1,7 +1,7 @@
 from ..models.user import User
-from ..utils.exceptions.username_already_in_use_exception import UsernameAlreadyInUseException
-from ..config import db
+from ..common.exceptions.username_already_in_use_exception import UsernameAlreadyInUseException
 from sqlalchemy.exc import IntegrityError
+from ..common.libs.sqlalchemy import db
 
 def user_exists(username: str) -> bool:
     user = User.query.filter_by(username=username).first()

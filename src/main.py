@@ -1,6 +1,10 @@
-from .config import create_app, db, socketio, ma, api_bp
+from .config import create_app
+from .common.libs.sqlalchemy import db
+from .common.libs.socketio import socketio
+from .common.libs.marshmallow import marshmallow
+from .common.blueprints.api import api
 
-app = create_app(db, socketio, ma, api_bp)
+app = create_app(db, socketio, marshmallow, api)
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
