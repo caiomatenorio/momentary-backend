@@ -1,0 +1,23 @@
+from ..models.user import User
+from ..utils.exceptions.username_already_in_use_exception import UsernameAlreadyInUseException
+from ..config import db
+from sqlalchemy.exc import IntegrityError
+
+def user_exists(username):
+    user = User.query.filter_by(username=username).first()
+    return user is not None
+
+def create_user(name, username, password):
+    if user_exists(username):
+        raise UsernameAlreadyInUseException()
+    
+    try:
+        user = User(name=name, username=username, password=password)
+        db.session.add(user)
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        raise UsernameAlreadyInUseException()
+    except Exception as e:
+        db.session.rollback()
+        raise e
