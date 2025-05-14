@@ -3,11 +3,11 @@ from ..utils.exceptions.username_already_in_use_exception import UsernameAlready
 from ..config import db
 from sqlalchemy.exc import IntegrityError
 
-def user_exists(username):
+def user_exists(username: str) -> bool:
     user = User.query.filter_by(username=username).first()
     return user is not None
 
-def create_user(name, username, password):
+def create_user(name: str, username: str, password: str):
     if user_exists(username):
         raise UsernameAlreadyInUseException()
     

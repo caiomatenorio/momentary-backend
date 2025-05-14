@@ -1,4 +1,4 @@
-from http_exception import HttpException
+from .http_exception import HttpException
 
 class UsernameAlreadyInUseException(HttpException):
     status_code = 409

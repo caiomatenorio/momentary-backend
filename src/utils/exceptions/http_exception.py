@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
+@dataclass
 class HttpException(Exception, ABC):
     @property
     @abstractmethod

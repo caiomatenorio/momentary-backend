@@ -6,6 +6,9 @@ from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_marshmallow import Marshmallow
+from .utils.exceptions.http_exception import HttpException
+from .error_handler import handle_http_exception, handle_validation_error
+from marshmallow import ValidationError
 
 load_dotenv()
 
@@ -30,6 +33,10 @@ def create_app(db: SQLAlchemy, socketio: SocketIO, ma: Marshmallow, bp: Blueprin
     socketio.init_app(app)
     ma.init_app(app)
     app.register_blueprint(bp)
+
+    # Register error handlers
+    app.register_error_handler(HttpException, handle_http_exception)
+    app.register_error_handler(ValidationError, handle_validation_error)
 
     # Create database tables
     with app.app_context():

@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import UUID, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..config import db, get_env_var
-from .user import User 
 
 
 class Session(db.Model):

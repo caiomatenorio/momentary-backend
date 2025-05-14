@@ -1,5 +1,11 @@
 from ..config import api_bp
+from ..services import user_service
+from ..schemas.sign_up_schema import SignupSchema
+from flask import request
+from ..dtos.success_response_body import SuccessResponseBody
 
 @api_bp.post("/signup")
 def signup():
-    pass
+    body = SignupSchema().load(request.json)
+    user_service.create_user(name=body.get('name'), username=body.get('username'), password=body.get('password'))
+    return SuccessResponseBody(201, "User created successfully").to_response()

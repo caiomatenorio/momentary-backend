@@ -1,24 +1,10 @@
 from .utils.exceptions.http_exception import HttpException
-from flask import jsonify
-from ..main import app
 from marshmallow import ValidationError
+from .dtos.error_response_body import ErrorResponseBody
 
-@app.errorhandler(HttpException)
 def handle_http_exception(e: HttpException):
-    response = {
-        "status_code": e.status_code, 
-        "message": e.message
-    }
-
-    return jsonify(response), e.status_code
+    return ErrorResponseBody(e.status_code, e.message).to_response()
 
 
-@app.errorhandler(ValidationError)
 def handle_validation_error(e: ValidationError):
-    response = {
-        "status_code": 400,
-        "message": "Validation error",
-        "errors": e.messages
-    }
-
-    return jsonify(response), 400
+    return ErrorResponseBody(400, "Validation error", e.messages).to_response()

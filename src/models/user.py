@@ -3,7 +3,6 @@ from typing import List
 from sqlalchemy import UUID
 from ..config import db
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from .session import Session
 
 
 class User(db.Model):

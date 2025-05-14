@@ -1,4 +1,4 @@
-from src.config import create_app, db, socketio, ma, api_bp
+from .config import create_app, db, socketio, ma, api_bp
 
 app = create_app(db, socketio, ma, api_bp)
 
