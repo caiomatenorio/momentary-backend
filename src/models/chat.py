@@ -6,11 +6,11 @@ from sqlalchemy import Enum, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..libs.sqlalchemy import db
-from .enums.conversation_type import ConversationType
+from .enums.conversation_type import ChatType
 
 
-class DirectConversation(db.Model):
-    __tablename__ = "conversations"
+class Chat(db.Model):
+    __tablename__ = "chats"
 
     id: Mapped[UUID] = mapped_column(
         SQLAlchemyUUID(as_uuid=True),
@@ -20,12 +20,10 @@ class DirectConversation(db.Model):
         nullable=False,
     )
 
-    type: Mapped[ConversationType] = mapped_column(
-        Enum(ConversationType), nullable=False
-    )
+    type: Mapped[ChatType] = mapped_column(Enum(ChatType), nullable=False)
 
-    participants: Mapped[List["ConversationParticipant"]] = relationship(  # type: ignore
-        back_populates="conversation",
+    participants: Mapped[List["ChatParticipant"]] = relationship(  # type: ignore
+        back_populates="chat",
         cascade="all, delete-orphan",
     )
 
@@ -35,4 +33,4 @@ class DirectConversation(db.Model):
     )
 
     def __repr__(self) -> str:
-        return f"<Conversation {self.id}>"
+        return f"<Chat {self.id} ({self.type})>"

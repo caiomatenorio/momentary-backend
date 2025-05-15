@@ -1,1 +1,1 @@
-from . import conversation, conversation_participant, message, session, user
+from . import chat, chat_participant, message, session, user

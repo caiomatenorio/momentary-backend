@@ -20,20 +20,20 @@ class Message(db.Model):
         nullable=False,
     )
 
-    conversation_id: Mapped[UUID] = mapped_column(
-        ForeignKey("conversations.id"),
+    chat_id: Mapped[UUID] = mapped_column(
+        ForeignKey("chats.id"),
         nullable=False,
     )
 
-    conversation: Mapped["DirectConversation"] = relationship(  # type: ignore
+    chat: Mapped["Chat"] = relationship(  # type: ignore
         back_populates="messages",
     )
 
     sender_id: Mapped[UUID] = mapped_column(
-        ForeignKey("conversation_participants.id"), nullable=False
+        ForeignKey("chat_participants.id"), nullable=False
     )
 
-    sender: Mapped["ConversationParticipant"] = relationship(  # type: ignore
+    sender: Mapped["ChatParticipant"] = relationship(  # type: ignore
         back_populates="messages",
     )
 

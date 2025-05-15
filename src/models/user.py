@@ -28,7 +28,7 @@ class User(db.Model):
         back_populates="user", cascade="all, delete-orphan"
     )
 
-    participations: Mapped[List["ConversationParticipant"]] = relationship(  # type: ignore
+    chat_participations: Mapped[List["ChatParticipant"]] = relationship(  # type: ignore
         back_populates="user", cascade="all, delete-orphan"
     )
 

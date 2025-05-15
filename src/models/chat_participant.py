@@ -7,8 +7,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..libs.sqlalchemy import db
 
 
-class ConversationParticipant(db.Model):
-    __tablename__ = "conversation_participants"
+class ChatParticipant(db.Model):
+    __tablename__ = "chat_participants"
 
     id: Mapped[UUID] = mapped_column(
         SQLAlchemyUUID(as_uuid=True),
@@ -18,20 +18,20 @@ class ConversationParticipant(db.Model):
         nullable=False,
     )
 
-    conversation_id: Mapped[UUID] = mapped_column(
-        ForeignKey("conversations.id"),
+    chat_id: Mapped[UUID] = mapped_column(
+        ForeignKey("chats.id"),
         nullable=False,
     )
 
-    conversation: Mapped["Conversation"] = relationship(  # type: ignore
+    chat: Mapped["Chat"] = relationship(  # type: ignore
         back_populates="participants",
     )
 
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 
-    user: Mapped["User"] = relationship(back_populates="participations")  # type: ignore
+    user: Mapped["User"] = relationship(back_populates="chat_participations")  # type: ignore
 
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
     def __repr__(self) -> str:
-        return f"<ConversationParticipant {self.id}>"
+        return f"<ChatParticipant {self.id}>"
