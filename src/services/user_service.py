@@ -1,15 +1,18 @@
 import bcrypt
+from flask import g
 from sqlalchemy.exc import IntegrityError
 
 from ..exceptions.http_exceptions.invalid_credentials_exception import (
     InvalidCredentialsException,
 )
+from ..exceptions.http_exceptions.unauthorized_exception import UnauthorizedException
 from ..exceptions.http_exceptions.user_not_found_exception import UserNotFoundException
 from ..exceptions.http_exceptions.username_already_in_use_exception import (
     UsernameAlreadyInUseException,
 )
 from ..libs.sqlalchemy import db
 from ..models.user import User
+from . import session_service
 
 
 def user_exists(username: str) -> bool:
@@ -71,3 +74,12 @@ def get_user_by_id_or_raise(user_id: int) -> User:
     if not user:
         raise UserNotFoundException()
     return user
+
+
+def whoami() -> dict:
+    current_user_data = {
+        "username": g.get("current_username"),
+        "name": g.get("current_name"),
+    }
+
+    return current_user_data

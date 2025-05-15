@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 from typing import Optional
+
+from flask import Response, jsonify, make_response
+
+from ..services import session_service
 from .response_body import ResponseBody
-from flask import Response, jsonify
 
 
 @dataclass
@@ -10,10 +13,17 @@ class ErrorResponseBody(ResponseBody):
     message: str
     errors: Optional[list[str] | list | dict] = None
 
-    def to_response(self) -> tuple[Response, int]:
+    def to_response(
+        self, *, remove_session_cookies: bool = False
+    ) -> tuple[Response, int]:
         body = self.__dict__.copy()
 
         if self.errors is None:
             body.pop("errors")
 
-        return jsonify(body), self.status_code
+        response = make_response(jsonify(body), self.status_code)
+
+        if remove_session_cookies:
+            session_service.remove_session_cookies(response)
+
+        return response

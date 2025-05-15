@@ -6,8 +6,13 @@ from flask_sqlalchemy import SQLAlchemy
 from marshmallow import ValidationError
 
 from .env import env
-from .error_handler import handle_http_exception, handle_validation_error
+from .error_handler import (
+    handle_http_exception,
+    handle_unauthorized_exception,
+    handle_validation_error,
+)
 from .exceptions.http_exceptions.http_exception import HttpException
+from .exceptions.http_exceptions.unauthorized_exception import UnauthorizedException
 
 
 def create_app(
@@ -33,5 +38,6 @@ def create_app(
     # Register error handlers
     app.register_error_handler(HttpException, handle_http_exception)
     app.register_error_handler(ValidationError, handle_validation_error)
+    app.register_error_handler(UnauthorizedException, handle_unauthorized_exception)
 
     return app

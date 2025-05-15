@@ -15,6 +15,6 @@ def handle_validation_error(e: ValidationError):
 
 
 def handle_unauthorized_exception(e: UnauthorizedException):
-    response = ErrorResponseBody(e.status_code, e.message).to_response()
-    remove_session_cookies(response[0])
-    return response
+    return ErrorResponseBody(e.status_code, e.message).to_response(
+        remove_session_cookies=True
+    )

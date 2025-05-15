@@ -42,7 +42,7 @@ class Env:
     def ENV(self) -> str:
         return self._ENV
 
-    def _get_env_var(key: str) -> str:
+    def _get_env_var(self, key: str) -> str:
         value = os.getenv(key)
 
         if not value:

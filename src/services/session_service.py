@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
+from uuid import UUID
 
 import jwt
-from flask import Request, Response
+from flask import Request, Response, g
 from sqlalchemy.exc import IntegrityError
 
 from ..env import env
@@ -21,12 +22,12 @@ def create_session(user: User) -> Session:
     return session
 
 
-def create_jwt(session_id: str, username: str, name: str) -> str:
+def create_jwt(session_id: UUID, username: str, name: str) -> str:
     jwt_expiration_secs = env.JWT_EXPIRATION_SECS
 
     payload = {
         "data": {
-            "session_id": session_id,
+            "session_id": str(session_id),
             "username": username,
             "name": name,
         },
@@ -37,9 +38,9 @@ def create_jwt(session_id: str, username: str, name: str) -> str:
     return jwt.encode(payload, env.JWT_SECRET_KEY, algorithm="HS256")
 
 
-def decode_jwt(jwt: str) -> dict:
+def decode_jwt(token: str) -> dict:
     try:
-        payload = jwt.decode(jwt, env.JWT_SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token, env.JWT_SECRET_KEY, algorithms=["HS256"])
         return payload
     except jwt.ExpiredSignatureError:
         raise ValueError("Token has expired")  # TODO: create a custom exception
@@ -64,13 +65,32 @@ def is_jwt_valid(jwt: str) -> bool:
         return False
 
 
-def add_session_cookies(
-    response: Response, auth_token: str, referesh_token: str
-) -> None:
+def add_session_cookies(response: Response) -> None:
+    if g.get("new_auth_token") and g.get("new_refresh_token"):
+        response.set_cookie(
+            "auth_token",
+            g.get("new_auth_token"),
+            max_age=env.JWT_EXPIRATION_SECS,
+            httponly=True,
+            secure=env.ENV == "production",
+            samesite="Strict",
+        )
+
+        response.set_cookie(
+            "refresh_token",
+            g.get("new_refresh_token"),
+            max_age=env.SESSION_EXPIRATION_SECS,
+            httponly=True,
+            secure=env.ENV == "production",
+            samesite="Strict",
+        )
+
+
+def remove_session_cookies(response: Response) -> None:
     response.set_cookie(
         "auth_token",
-        auth_token,
-        max_age=env.JWT_EXPIRATION_SECS,
+        "",
+        expires=0,
         httponly=True,
         secure=env.ENV == "production",
         samesite="Strict",
@@ -78,17 +98,12 @@ def add_session_cookies(
 
     response.set_cookie(
         "refresh_token",
-        referesh_token,
-        max_age=env.SESSION_EXPIRATION_SECS,
+        "",
+        expires=0,
         httponly=True,
         secure=env.ENV == "production",
         samesite="Strict",
     )
-
-
-def remove_session_cookies(response: Response) -> None:
-    response.delete_cookie("auth_token")
-    response.delete_cookie("refresh_token")
 
 
 def extract_session_tokens_from_request(
@@ -100,12 +115,14 @@ def extract_session_tokens_from_request(
     return auth_token, refresh_token
 
 
-def sign_in(username: str, password: str, response: Response) -> None:
+def sign_in(username: str, password: str) -> None:
     user_service.validate_credentials(username, password)
     user = user_service.get_user_by_username_or_raise(username)
     session = create_session(user)
-    jwt = create_jwt(session.id, user.username, user.name)
-    add_session_cookies(response, jwt, session.refresh_token)
+    auth_token = create_jwt(session.id, user.username, user.name)
+
+    g.new_auth_token = auth_token
+    g.new_refresh_token = session.refresh_token
 
 
 def refresh_session(refresh_token: str) -> tuple[str, str]:
@@ -135,17 +152,26 @@ def refresh_session(refresh_token: str) -> tuple[str, str]:
         return jwt, session.refresh_token
 
 
-def validate_session(request: Request) -> tuple[str, str] | None:
+def set_current_session_info(auth_token):
+    payload_data = decode_jwt(auth_token)["data"]
+    g.current_session_id = payload_data["session_id"]
+    g.current_username = payload_data["username"]
+    g.current_name = payload_data["name"]
+
+
+def validate_session(request: Request) -> None:
     auth_token, refresh_token = extract_session_tokens_from_request(request)
 
     if auth_token and is_jwt_valid(auth_token):
+        set_current_session_info(auth_token)
         return
 
     if refresh_token:
         try:
-            new_auth_token, new_refresh_token = refresh_session(refresh_token)
-            return new_auth_token, new_refresh_token
-        except SessionNotFoundException | SessionExpiredException | IntegrityError:
+            g.new_auth_token, g.new_refresh_token = refresh_session(refresh_token)
+            set_current_session_info(g.new_auth_token)
+            return
+        except (SessionNotFoundException, SessionExpiredException, IntegrityError):
             pass
 
     raise UnauthorizedException()

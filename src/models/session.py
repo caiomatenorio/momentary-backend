@@ -26,21 +26,24 @@ class Session(db.Model):
     user: Mapped["User"] = relationship(back_populates="sessions")  # type: ignore
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     expires_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),  # Ensure the column is timezone-aware
         default=lambda: Session.calculate_expiration(),
         nullable=False,
     )
 
     refresh_token: Mapped[str] = mapped_column(
-        UUID(as_uuid=False),
         default=lambda: Session.generate_refresh_token(),
         unique=True,
         nullable=False,
