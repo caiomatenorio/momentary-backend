@@ -5,6 +5,7 @@ from ..decorators.requires_authentication import requires_authentication
 from ..dtos.success_response_body import SuccessResponseBody
 from ..schemas.user_controller.signup_schema import SignupSchema
 from ..schemas.user_controller.update_name_schema import UpdateNameSchema
+from ..schemas.user_controller.update_password_schema import UpdatePasswordSchema
 from ..schemas.user_controller.update_username_schema import UpdateUsernameSchema
 from ..services import user_service
 
@@ -33,7 +34,7 @@ def whoami():
 @requires_authentication(request)
 def update_name():
     body = UpdateNameSchema().load(request.json)
-    user_service.update_name(body.get("name"))
+    user_service.update_name(name=body.get("name"))
     return SuccessResponseBody(200, "User name updated successfully").to_response()
 
 
@@ -41,5 +42,15 @@ def update_name():
 @requires_authentication(request)
 def update_username():
     body = UpdateUsernameSchema().load(request.json)
-    user_service.update_username(body.get("username"))
+    user_service.update_username(username=body.get("username"))
     return SuccessResponseBody(200, "User username updated successfully").to_response()
+
+
+@api.put("/me/password")
+@requires_authentication(request)
+def update_password():
+    body = UpdatePasswordSchema().load(request.json)
+    user_service.update_password(
+        old_password=body.get("old_password"), new_password=body.get("new_password")
+    )
+    return SuccessResponseBody(200, "User password updated successfully").to_response()

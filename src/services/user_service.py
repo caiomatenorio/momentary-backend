@@ -113,3 +113,16 @@ def update_username(new_username: str) -> None:
         user = get_user_by_id_or_raise(user_id, for_update=True)
         user.username = new_username
         db.session.add(user)
+
+
+def update_password(old_password: str, new_password: str) -> None:
+    with db.session.begin():
+        user_id = g.get("current_user_id")
+        user = get_user_by_id_or_raise(user_id, for_update=True)
+
+        if not check_password(old_password, user.password_hash):
+            raise InvalidCredentialsException()
+
+        new_password_hash = hash_password(new_password)
+        user.password_hash = new_password_hash
+        db.session.add(user)

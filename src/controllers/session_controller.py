@@ -10,5 +10,7 @@ from ..services import session_service
 @api.post("/signin")
 def signin():
     body = SigninSchema().load(request.json)
-    session_service.sign_in(body.get("username"), body.get("password"))
+    session_service.sign_in(
+        username=body.get("username"), password=body.get("password")
+    )
     return SuccessResponseBody(200, "User signed in successfully").to_response()
