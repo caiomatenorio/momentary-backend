@@ -1,13 +1,16 @@
 import os
-from .common.errors.env_not_defined_error import EnvNotDefinedError
+
 from dotenv import load_dotenv
-from flask import Flask, Blueprint
+from flask import Blueprint, Flask
+from flask_marshmallow import Marshmallow
+from flask_migrate import Migrate
 from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
-from flask_marshmallow import Marshmallow
+from marshmallow import ValidationError
+
+from .common.errors.env_not_defined_error import EnvNotDefinedError
 from .common.exceptions.http_exception import HttpException
 from .error_handler import handle_http_exception, handle_validation_error
-from marshmallow import ValidationError
 
 load_dotenv()
 
@@ -22,7 +25,11 @@ def get_env_var(key: str) -> str:
 
 
 def create_app(
-    db: SQLAlchemy, socketio: SocketIO, marshmallow: Marshmallow, bp: Blueprint
+    db: SQLAlchemy,
+    migrate: Migrate,
+    socketio: SocketIO,
+    marshmallow: Marshmallow,
+    bp: Blueprint,
 ) -> Flask:
     app = Flask(__name__)
 
@@ -32,17 +39,13 @@ def create_app(
 
     # Initialize extensions
     db.init_app(app)
-    socketio.init_app(app)
+    migrate.init_app(app, db)
+    socketio.init_app(app, cors_allowed_origins="*")
     marshmallow.init_app(app)
     app.register_blueprint(bp)
 
     # Register error handlers
     app.register_error_handler(HttpException, handle_http_exception)
     app.register_error_handler(ValidationError, handle_validation_error)
-
-    # Create database tables
-    with app.app_context():
-        db.create_all()
-        print("Database tables created.")
 
     return app

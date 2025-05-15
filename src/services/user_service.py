@@ -4,6 +4,7 @@ from ..common.exceptions.username_already_in_use_exception import (
 )
 from sqlalchemy.exc import IntegrityError
 from ..common.libs.sqlalchemy import db
+import bcrypt
 
 
 def user_exists(username: str) -> bool:
@@ -11,12 +12,16 @@ def user_exists(username: str) -> bool:
     return user is not None
 
 
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
 def create_user(name: str, username: str, password: str):
     if user_exists(username):
         raise UsernameAlreadyInUseException()
 
     try:
-        user = User(name=name, username=username, password=password)
+        user = User(name=name, username=username, password_hash=hash_password(password))
         db.session.add(user)
         db.session.commit()
     except IntegrityError:
