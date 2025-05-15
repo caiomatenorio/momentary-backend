@@ -18,7 +18,6 @@ from . import user_service
 def create_session(user: User) -> Session:
     session = Session(user=user)
     db.session.add(session)
-    db.session.commit()
     return session
 
 
@@ -108,36 +107,37 @@ def extract_session_tokens_from_request(
 
 
 def sign_in(username: str, password: str) -> None:
-    user_service.validate_credentials(username, password)
-    user = user_service.get_user_by_username_or_raise(username)
-    session = create_session(user)
-    auth_token = create_jwt(session.id, user.id, user.username, user.name)
+    with db.session.begin():
+        user_service.validate_credentials(username, password)
+        user = user_service.get_user_by_username_or_raise(username)
+        session = create_session(user)
+        auth_token = create_jwt(session.id, user.id, user.username, user.name)
 
-    g.new_auth_token = auth_token
-    g.new_refresh_token = session.refresh_token
+        g.new_auth_token = auth_token
+        g.new_refresh_token = session.refresh_token
 
 
 def refresh_session(refresh_token: str) -> tuple[str, str]:
-    session = db.session.query(Session).filter_by(refresh_token=refresh_token).first()
+    with db.session.begin():
+        session = (
+            db.session.query(Session)
+            .filter_by(refresh_token=refresh_token)
+            .with_for_update()
+            .first()
+        )
 
-    if not session:
-        raise SessionNotFoundException()
+        if not session:
+            raise SessionNotFoundException()
 
-    if session.expires_at < datetime.now(timezone.utc):
-        db.session.delete(session)
-        db.session.commit()
-        raise SessionExpiredException()
+        if session.expires_at < datetime.now(timezone.utc):
+            with db.session.begin_nested():
+                db.session.delete(session)
+            raise SessionExpiredException()
 
-    try:
         session.refresh_token = Session.generate_refresh_token()
         session.expires_at = Session.calculate_expiration()
         session.updated_at = datetime.now(timezone.utc)
         db.session.add(session)
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        raise e
-    else:
         user = user_service.get_user_by_id_or_raise(session.user_id)
         jwt = create_jwt(session.id, user.id, user.username, user.name)
 

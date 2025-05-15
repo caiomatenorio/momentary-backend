@@ -15,8 +15,13 @@ from ..models.user import User
 from . import session_service
 
 
-def user_exists(username: str) -> bool:
-    user = User.query.filter_by(username=username).first()
+def user_exists(username: str, *, for_update: bool = False) -> bool:
+    query = User.query.filter_by(username=username)
+
+    if for_update:
+        query = query.with_for_update()
+
+    user = query.first()
     return user is not None
 
 
@@ -29,48 +34,53 @@ def check_password(password: str, hashed_password: str) -> bool:
 
 
 def create_user(name: str, username: str, password: str) -> None:
-    if user_exists(username):
-        raise UsernameAlreadyInUseException()
+    with db.session.begin():
+        if user_exists(username, for_update=True):
+            raise UsernameAlreadyInUseException()
 
-    try:
         user = User(name=name, username=username, password_hash=hash_password(password))
         db.session.add(user)
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        raise UsernameAlreadyInUseException()
-    except Exception as e:
-        db.session.rollback()
-        raise e
 
 
-def validate_credentials(username: str, password: str) -> None:
-    user = User.query.filter_by(username=username).first()
+def validate_credentials(
+    username: str, password: str, *, for_update: bool = False
+) -> None:
+    user = get_user_by_username_or_raise(username, for_update=for_update)
     are_valid = check_password(password, user.password_hash) if user else False
 
     if not are_valid:
         raise InvalidCredentialsException()
 
 
-def get_user_by_username(username: str) -> User | None:
-    user = User.query.filter_by(username=username).first()
+def get_user_by_username(username: str, *, for_update: bool = False) -> User | None:
+    query = User.query.filter_by(username=username)
+
+    if for_update:
+        query = query.with_for_update()
+
+    user = query.first()
     return user
 
 
-def get_user_by_username_or_raise(username: str) -> User:
-    user = get_user_by_username(username)
+def get_user_by_username_or_raise(username: str, *, for_update: bool = False) -> User:
+    user = get_user_by_username(username, for_update=for_update)
     if not user:
         raise UserNotFoundException()
     return user
 
 
-def get_user_by_id(user_id: int) -> User | None:
-    user = User.query.filter_by(id=user_id).first()
+def get_user_by_id(user_id: int, *, for_update: bool = False) -> User | None:
+    query = User.query.filter_by(id=user_id)
+
+    if for_update:
+        query = query.for_update()
+
+    user = query.first()
     return user
 
 
-def get_user_by_id_or_raise(user_id: int) -> User:
-    user = get_user_by_id(user_id)
+def get_user_by_id_or_raise(user_id: int, *, for_update: bool = False) -> User:
+    user = get_user_by_id(user_id, for_update=for_update)
     if not user:
         raise UserNotFoundException()
     return user
@@ -84,3 +94,14 @@ def whoami() -> dict:
     }
 
     return current_user_data
+
+
+def change_name(new_name: str) -> None:
+    with db.session.begin():
+        if user_exists(new_name, for_update=True):
+            raise UsernameAlreadyInUseException()
+
+        user_id = g.get("current_user_id")
+        user = get_user_by_id_or_raise(user_id, for_update=True)
+        user.name = new_name
+        db.session.add(user)
