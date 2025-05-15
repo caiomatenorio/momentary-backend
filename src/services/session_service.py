@@ -196,3 +196,16 @@ def signout() -> None:
         session_id = g.get("current_session_id")
         session = get_session_by_id_or_raise(session_id)
         db.session.delete(session)
+
+
+def clean_expired_sessions() -> None:
+    with db.session.begin():
+        expired_sessions = (
+            db.session.query(Session)
+            .filter(Session.expires_at < datetime.now(timezone.utc))
+            .with_for_update()
+            .all()
+        )
+
+        for expired_session in expired_sessions:
+            db.session.delete(expired_session)

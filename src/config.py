@@ -1,4 +1,5 @@
 from flask import Blueprint, Flask
+from flask_apscheduler import APScheduler
 from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
 from flask_socketio import SocketIO
@@ -20,6 +21,7 @@ def create_app(
     migrate: Migrate,
     socketio: SocketIO,
     marshmallow: Marshmallow,
+    scheduler: APScheduler,
     bp: Blueprint,
 ) -> Flask:
     app = Flask(__name__)
@@ -27,12 +29,19 @@ def create_app(
     app.config["SQLALCHEMY_DATABASE_URI"] = env.DB_URL
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SECRET_KEY"] = env.SECRET_KEY
+    app.config["SCHEDULER_API_ENABLED"] = False
 
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
     socketio.init_app(app, cors_allowed_origins="*")
     marshmallow.init_app(app)
+    scheduler.init_app(app)
+
+    # Start CRON jobs
+    scheduler.start()
+
+    # Register blueprints
     app.register_blueprint(bp)
 
     # Register error handlers
