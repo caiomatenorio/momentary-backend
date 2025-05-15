@@ -20,9 +20,9 @@ class User(db.Model):
 
     username: Mapped[str] = mapped_column(unique=True, nullable=False)
 
-    password: Mapped[str] = mapped_column(nullable=False)
+    password_hash: Mapped[str] = mapped_column(nullable=False)
 
-    sessions: Mapped[List["Session"]] = relationship(
+    sessions: Mapped[List["Session"]] = relationship( # type: ignore
         back_populates="user", cascade="all, delete-orphan"
     )
 
