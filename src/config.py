@@ -11,6 +11,7 @@ from marshmallow import ValidationError
 
 load_dotenv()
 
+
 def get_env_var(key: str) -> str:
     value = os.getenv(key)
 
@@ -20,7 +21,9 @@ def get_env_var(key: str) -> str:
     return value
 
 
-def create_app(db: SQLAlchemy, socketio: SocketIO, marshmallow: Marshmallow, bp: Blueprint) -> Flask:
+def create_app(
+    db: SQLAlchemy, socketio: SocketIO, marshmallow: Marshmallow, bp: Blueprint
+) -> Flask:
     app = Flask(__name__)
 
     app.config["SQLALCHEMY_DATABASE_URI"] = get_env_var("DB_URL")

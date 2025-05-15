@@ -22,7 +22,7 @@ class User(db.Model):
 
     password_hash: Mapped[str] = mapped_column(nullable=False)
 
-    sessions: Mapped[List["Session"]] = relationship( # type: ignore
+    sessions: Mapped[List["Session"]] = relationship(  # type: ignore
         back_populates="user", cascade="all, delete-orphan"
     )
 

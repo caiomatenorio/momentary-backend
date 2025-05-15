@@ -3,6 +3,7 @@ from typing import Optional
 from .response_body import ResponseBody
 from flask import Response, jsonify
 
+
 @dataclass
 class ErrorResponseBody(ResponseBody):
     status_code: int
@@ -14,5 +15,5 @@ class ErrorResponseBody(ResponseBody):
 
         if self.errors is None:
             body.pop("errors")
-        
+
         return jsonify(body), self.status_code

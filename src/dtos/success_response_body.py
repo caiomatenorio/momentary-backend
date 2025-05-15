@@ -3,6 +3,7 @@ from typing import Optional
 from .response_body import ResponseBody
 from flask import Response, jsonify
 
+
 @dataclass
 class SuccessResponseBody(ResponseBody):
     status_code: int
