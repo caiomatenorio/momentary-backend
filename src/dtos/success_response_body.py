@@ -13,13 +13,19 @@ class SuccessResponseBody(ResponseBody):
     message: str
     data: Optional[any] = None
 
-    def to_response(self) -> tuple[Response, int]:
+    def to_response(
+        self, *, remove_session_cookies: bool = False
+    ) -> tuple[Response, int]:
         body = self.__dict__.copy()
 
         if self.data is None:
             body.pop("data")
 
         response = make_response(jsonify(body), self.status_code)
-        session_service.add_session_cookies(response)
+
+        if remove_session_cookies:
+            session_service.remove_session_cookies(response)
+        else:
+            session_service.add_session_cookies(response)
 
         return response

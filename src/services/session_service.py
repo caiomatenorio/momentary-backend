@@ -106,7 +106,7 @@ def extract_session_tokens_from_request(
     return auth_token, refresh_token
 
 
-def sign_in(username: str, password: str) -> None:
+def signin(username: str, password: str) -> None:
     with db.session.begin():
         user_service.validate_credentials(username, password)
         user = user_service.get_user_by_username_or_raise(username)
@@ -168,3 +168,31 @@ def validate_session(request: Request) -> None:
             pass
 
     raise UnauthorizedException()
+
+
+def get_session_by_id(session_id: UUID, *, for_update: bool = False) -> Session | None:
+    query = db.session.query(Session).filter_by(id=session_id)
+
+    if for_update:
+        query = query.with_for_update()
+
+    session = query.first()
+    return session
+
+
+def get_session_by_id_or_raise(
+    session_id: UUID, *, for_update: bool = False
+) -> Session:
+    session = get_session_by_id(session_id, for_update=for_update)
+
+    if not session:
+        raise SessionNotFoundException()
+
+    return session
+
+
+def signout() -> None:
+    with db.session.begin():
+        session_id = g.get("current_session_id")
+        session = get_session_by_id_or_raise(session_id)
+        db.session.delete(session)
