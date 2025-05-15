@@ -70,10 +70,10 @@ def get_user_by_username_or_raise(username: str, *, for_update: bool = False) ->
 
 
 def get_user_by_id(user_id: int, *, for_update: bool = False) -> User | None:
-    query = User.query.filter_by(id=user_id)
+    query = db.session.query(User).filter_by(id=user_id)
 
     if for_update:
-        query = query.for_update()
+        query = query.with_for_update()
 
     user = query.first()
     return user
@@ -96,12 +96,20 @@ def whoami() -> dict:
     return current_user_data
 
 
-def change_name(new_name: str) -> None:
+def update_name(new_name: str) -> None:
     with db.session.begin():
-        if user_exists(new_name, for_update=True):
+        user_id = g.get("current_user_id")
+        user = get_user_by_id_or_raise(user_id, for_update=True)
+        user.name = new_name
+        db.session.add(user)
+
+
+def update_username(new_username: str) -> None:
+    with db.session.begin():
+        if user_exists(new_username, for_update=True):
             raise UsernameAlreadyInUseException()
 
         user_id = g.get("current_user_id")
         user = get_user_by_id_or_raise(user_id, for_update=True)
-        user.name = new_name
+        user.username = new_username
         db.session.add(user)
