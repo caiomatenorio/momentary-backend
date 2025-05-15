@@ -78,6 +78,7 @@ def get_user_by_id_or_raise(user_id: int) -> User:
 
 def whoami() -> dict:
     current_user_data = {
+        "user_id": g.get("current_user_id"),
         "username": g.get("current_username"),
         "name": g.get("current_name"),
     }

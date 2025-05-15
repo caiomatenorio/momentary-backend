@@ -22,12 +22,13 @@ def create_session(user: User) -> Session:
     return session
 
 
-def create_jwt(session_id: UUID, username: str, name: str) -> str:
+def create_jwt(session_id: UUID, user_id: UUID, username: str, name: str) -> str:
     jwt_expiration_secs = env.JWT_EXPIRATION_SECS
 
     payload = {
         "data": {
             "session_id": str(session_id),
+            "user_id": str(user_id),
             "username": username,
             "name": name,
         },
@@ -50,16 +51,7 @@ def decode_jwt(token: str) -> dict:
 
 def is_jwt_valid(jwt: str) -> bool:
     try:
-        payload = decode_jwt(jwt)
-        session_id = payload["data"]["session_id"]
-        session = db.session.query(Session).filter_by(id=session_id).first()
-
-        if not session:
-            return False
-
-        if session.expires_at < datetime.now(timezone.utc):
-            return False
-
+        decode_jwt(jwt)
         return True
     except ValueError:
         return False
@@ -119,7 +111,7 @@ def sign_in(username: str, password: str) -> None:
     user_service.validate_credentials(username, password)
     user = user_service.get_user_by_username_or_raise(username)
     session = create_session(user)
-    auth_token = create_jwt(session.id, user.username, user.name)
+    auth_token = create_jwt(session.id, user.id, user.username, user.name)
 
     g.new_auth_token = auth_token
     g.new_refresh_token = session.refresh_token
@@ -147,7 +139,7 @@ def refresh_session(refresh_token: str) -> tuple[str, str]:
         raise e
     else:
         user = user_service.get_user_by_id_or_raise(session.user_id)
-        jwt = create_jwt(session.id, user.username, user.name)
+        jwt = create_jwt(session.id, user.id, user.username, user.name)
 
         return jwt, session.refresh_token
 
@@ -155,6 +147,7 @@ def refresh_session(refresh_token: str) -> tuple[str, str]:
 def set_current_session_info(auth_token):
     payload_data = decode_jwt(auth_token)["data"]
     g.current_session_id = payload_data["session_id"]
+    g.current_user_id = payload_data["user_id"]
     g.current_username = payload_data["username"]
     g.current_name = payload_data["name"]
 

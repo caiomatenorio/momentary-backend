@@ -16,7 +16,7 @@ class Session(db.Model):
     id: Mapped[UUID] = mapped_column(
         SQLAlchemyUUID(as_uuid=True),
         primary_key=True,
-        default=lambda: uuid4(),
+        default=uuid4,
         unique=True,
         nullable=False,
     )

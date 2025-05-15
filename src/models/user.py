@@ -1,7 +1,7 @@
-import uuid
 from typing import List
+from uuid import UUID, uuid4
 
-from sqlalchemy import UUID
+from sqlalchemy import UUID as SQLAlchemyUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..libs.sqlalchemy import db
@@ -10,10 +10,10 @@ from ..libs.sqlalchemy import db
 class User(db.Model):
     __tablename__ = "users"
 
-    id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False),
+    id: Mapped[UUID] = mapped_column(
+        SQLAlchemyUUID(as_uuid=True),
         primary_key=True,
-        default=lambda: str(uuid.uuid4()),
+        default=uuid4,
         unique=True,
         nullable=False,
     )
