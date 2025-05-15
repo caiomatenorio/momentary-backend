@@ -1,1 +1,1 @@
-from . import *
+from . import ping_controller

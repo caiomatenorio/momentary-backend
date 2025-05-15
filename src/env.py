@@ -17,6 +17,7 @@ class Env:
         self._JWT_SECRET_KEY = self._get_env_var("JWT_SECRET_KEY")
         self._JWT_EXPIRATION_SECS = int(self._get_env_var("JWT_EXPIRATION_SECS"))
         self._ENV = self._get_env_var("ENV")
+        self._MESSAGE_TTL_SECS = self._get_env_var("MESSAGE_TTL_SECS")
 
     @property
     def DB_URL(self) -> str:
@@ -41,6 +42,10 @@ class Env:
     @property
     def ENV(self) -> str:
         return self._ENV
+
+    @property
+    def MESSAGE_TTL_SECS(self) -> str:
+        return self._MESSAGE_TTL_SECS
 
     def _get_env_var(self, key: str) -> str:
         value = os.getenv(key)
