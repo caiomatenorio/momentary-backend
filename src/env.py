@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from src.common.errors.env_not_defined_error import EnvNotDefinedError
+from .exceptions.env_not_defined_exception import EnvNotDefinedException
 
 load_dotenv()
 
@@ -46,7 +46,7 @@ class Env:
         value = os.getenv(key)
 
         if not value:
-            raise EnvNotDefinedError(key)
+            raise EnvNotDefinedException(key)
 
         return value
 

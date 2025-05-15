@@ -1,9 +1,9 @@
-from src.common.blueprints.api import api
-from src.common.libs.marshmallow import marshmallow
-from src.common.libs.migrate import migrate
-from src.common.libs.socketio import socketio
-from src.common.libs.sqlalchemy import db
+from src.blueprints.api import api
 from src.config import create_app
+from src.libs.marshmallow import marshmallow
+from src.libs.migrate import migrate
+from src.libs.socketio import socketio
+from src.libs.sqlalchemy import db
 
 app = create_app(db, migrate, socketio, marshmallow, api)
 

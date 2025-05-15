@@ -5,9 +5,9 @@ from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from marshmallow import ValidationError
 
-from .common.exceptions.http_exception import HttpException
 from .env import env
 from .error_handler import handle_http_exception, handle_validation_error
+from .exceptions.http_exceptions.http_exception import HttpException
 
 
 def create_app(

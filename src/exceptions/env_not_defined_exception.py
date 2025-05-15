@@ -1,4 +1,4 @@
-class EnvNotDefinedError(Exception):
+class EnvNotDefinedException(Exception):
     def __init__(self, key) -> None:
         self.key = key
         self.message = f"Environment variable '{key}' not defined"

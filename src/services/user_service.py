@@ -1,13 +1,14 @@
 import bcrypt
 from sqlalchemy.exc import IntegrityError
 
-from ..common.exceptions.invalid_credentials_exception import (
+from ..exceptions.http_exceptions.invalid_credentials_exception import (
     InvalidCredentialsException,
 )
-from ..common.exceptions.username_already_in_use_exception import (
+from ..exceptions.http_exceptions.user_not_found_exception import UserNotFoundException
+from ..exceptions.http_exceptions.username_already_in_use_exception import (
     UsernameAlreadyInUseException,
 )
-from ..common.libs.sqlalchemy import db
+from ..libs.sqlalchemy import db
 from ..models.user import User
 
 
@@ -56,5 +57,17 @@ def get_user_by_username(username: str) -> User | None:
 def get_user_by_username_or_raise(username: str) -> User:
     user = get_user_by_username(username)
     if not user:
-        raise InvalidCredentialsException()
+        raise UserNotFoundException()
+    return user
+
+
+def get_user_by_id(user_id: int) -> User | None:
+    user = User.query.filter_by(id=user_id).first()
+    return user
+
+
+def get_user_by_id_or_raise(user_id: int) -> User:
+    user = get_user_by_id(user_id)
+    if not user:
+        raise UserNotFoundException()
     return user

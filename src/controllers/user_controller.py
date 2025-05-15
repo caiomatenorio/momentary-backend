@@ -1,6 +1,6 @@
 from flask import request
 
-from ..common.blueprints.api import api
+from ..blueprints.api import api
 from ..dtos.success_response_body import SuccessResponseBody
 from ..schemas.signup_schema import SignupSchema
 from ..services import user_service

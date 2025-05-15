@@ -1,8 +1,10 @@
 import uuid
 from typing import List
+
 from sqlalchemy import UUID
-from ..common.libs.sqlalchemy import db
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from ..libs.sqlalchemy import db
 
 
 class User(db.Model):

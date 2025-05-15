@@ -6,8 +6,8 @@ from sqlalchemy import UUID as SQLAlchemyUUID
 from sqlalchemy import DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ..common.libs.sqlalchemy import db
 from ..env import env
+from ..libs.sqlalchemy import db
 
 
 class Session(db.Model):

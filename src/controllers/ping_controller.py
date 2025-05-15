@@ -1,4 +1,4 @@
-from ..common.blueprints.api import api
+from ..blueprints.api import api
 from ..dtos.success_response_body import SuccessResponseBody
 
 
