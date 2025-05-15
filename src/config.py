@@ -1,6 +1,3 @@
-import os
-
-from dotenv import load_dotenv
 from flask import Blueprint, Flask
 from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
@@ -8,20 +5,9 @@ from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from marshmallow import ValidationError
 
-from .common.errors.env_not_defined_error import EnvNotDefinedError
 from .common.exceptions.http_exception import HttpException
+from .env import env
 from .error_handler import handle_http_exception, handle_validation_error
-
-load_dotenv()
-
-
-def get_env_var(key: str) -> str:
-    value = os.getenv(key)
-
-    if not value:
-        raise EnvNotDefinedError(key)
-
-    return value
 
 
 def create_app(
@@ -33,9 +19,9 @@ def create_app(
 ) -> Flask:
     app = Flask(__name__)
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = get_env_var("DB_URL")
+    app.config["SQLALCHEMY_DATABASE_URI"] = env["DB_URL"]
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["SECRET_KEY"] = get_env_var("SECRET_KEY")
+    app.config["SECRET_KEY"] = env["SECRET_KEY"]
 
     # Initialize extensions
     db.init_app(app)

@@ -1,9 +1,11 @@
 import uuid
 from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import UUID, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from ..config import get_env_var
+
 from ..common.libs.sqlalchemy import db
+from ..env import env
 
 
 class Session(db.Model):
@@ -31,10 +33,21 @@ class Session(db.Model):
 
     expires_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc)
-        + timedelta(seconds=int(get_env_var("SESSION_DURATION_SECS"))),
+        default=lambda: Session.calculate_expiration(),
         nullable=False,
     )
+
+    refresh_token: Mapped[str] = mapped_column(
+        UUID(as_uuid=False),
+        default=lambda: str(uuid.uuid4()),
+        unique=True,
+        nullable=False,
+    )
+
+    @staticmethod
+    def calculate_expiration() -> datetime:
+        expiration_time = env["SESSION_EXPIRATION_SECS"]
+        return datetime.now(timezone.utc) + timedelta(seconds=expiration_time)
 
     def __repr__(self) -> str:
         return f"<Session {self.id}>"

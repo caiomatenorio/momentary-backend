@@ -18,6 +18,7 @@ MarkupSafe==3.0.2
 marshmallow==4.0.0
 marshmallow-sqlalchemy==1.4.2
 psycopg2-binary==2.9.10
+PyJWT==2.10.1
 python-dotenv==1.1.0
 python-engineio==4.12.1
 python-socketio==5.13.0
