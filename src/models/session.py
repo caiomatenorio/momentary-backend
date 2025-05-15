@@ -1,7 +1,9 @@
-import uuid
+import secrets
 from datetime import datetime, timedelta, timezone
+from uuid import UUID, uuid4
 
-from sqlalchemy import UUID, DateTime, ForeignKey
+from sqlalchemy import UUID as SQLAlchemyUUID
+from sqlalchemy import DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..common.libs.sqlalchemy import db
@@ -11,10 +13,10 @@ from ..env import env
 class Session(db.Model):
     __tablename__ = "sessions"
 
-    id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False),
+    id: Mapped[UUID] = mapped_column(
+        SQLAlchemyUUID(as_uuid=True),
         primary_key=True,
-        default=lambda: str(uuid.uuid4()),
+        default=lambda: uuid4(),
         unique=True,
         nullable=False,
     )
@@ -39,15 +41,19 @@ class Session(db.Model):
 
     refresh_token: Mapped[str] = mapped_column(
         UUID(as_uuid=False),
-        default=lambda: str(uuid.uuid4()),
+        default=lambda: Session.generate_refresh_token(),
         unique=True,
         nullable=False,
     )
 
     @staticmethod
     def calculate_expiration() -> datetime:
-        expiration_time = env["SESSION_EXPIRATION_SECS"]
+        expiration_time = env.SESSION_EXPIRATION_SECS
         return datetime.now(timezone.utc) + timedelta(seconds=expiration_time)
+
+    @staticmethod
+    def generate_refresh_token() -> str:
+        return secrets.token_urlsafe(64)
 
     def __repr__(self) -> str:
         return f"<Session {self.id}>"

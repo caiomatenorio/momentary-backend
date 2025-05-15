@@ -19,9 +19,9 @@ def create_app(
 ) -> Flask:
     app = Flask(__name__)
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = env["DB_URL"]
+    app.config["SQLALCHEMY_DATABASE_URI"] = env.DB_URL
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["SECRET_KEY"] = env["SECRET_KEY"]
+    app.config["SECRET_KEY"] = env.SECRET_KEY
 
     # Initialize extensions
     db.init_app(app)

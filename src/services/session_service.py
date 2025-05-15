@@ -18,22 +18,24 @@ def create_session(user: User) -> Session:
 
 
 def create_jwt(session_id: str, username: str, name: str) -> str:
+    jwt_expiration_secs = env.JWT_EXPIRATION_SECS
+
     payload = {
         "data": {
             "session_id": session_id,
             "username": username,
             "name": name,
         },
-        "exp": env["JWT_EXPIRATION_SECS"],
+        "exp": datetime.now(timezone.utc) + timedelta(seconds=jwt_expiration_secs),
         "iat": datetime.now(timezone.utc),
     }
 
-    return jwt.encode(payload, env["JWT_SECRET_KEY"], algorithm="HS256")
+    return jwt.encode(payload, env.JWT_SECRET_KEY, algorithm="HS256")
 
 
 def decode_jwt(jwt: str) -> dict:
     try:
-        payload = jwt.decode(jwt, env["JWT_SECRET"], algorithms=["HS256"])
+        payload = jwt.decode(jwt, env.JWT_SECRET_KEY, algorithms=["HS256"])
         return payload
     except jwt.ExpiredSignatureError:
         raise ValueError("Token has expired")  # TODO: create a custom exception
@@ -47,18 +49,18 @@ def add_session_cookies(
     response.set_cookie(
         "auth_token",
         auth_token,
-        max_age=env["JWT_EXPIRATION_SECS"],
+        max_age=env.JWT_EXPIRATION_SECS,
         httponly=True,
-        secure=env["ENV"] == "production",
+        secure=env.ENV == "production",
         samesite="Strict",
     )
 
     response.set_cookie(
         "refresh_token",
         referesh_token,
-        max_age=env["SESSION_EXPIRATION_SECS"],
+        max_age=env.SESSION_EXPIRATION_SECS,
         httponly=True,
-        secure=env["ENV"] == "production",
+        secure=env.ENV == "production",
         samesite="Strict",
     )
 
