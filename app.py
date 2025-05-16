@@ -1,13 +1,8 @@
-from src.blueprints.api import api
-from src.config import create_app
-from src.libs.marshmallow import marshmallow
-from src.libs.migrate import migrate
-from src.libs.scheduler import scheduler
-from src.libs.socketio import socketio
-from src.libs.sqlalchemy import db
-
-app = create_app(db, migrate, socketio, marshmallow, scheduler, api)
-
 if __name__ == "__main__":
-    socketio.run(app, debug=True)
+    import eventlet
+    import eventlet.wsgi
+
+    from src.app import app, socketio
+
+    socketio.run(app, debug=True, host="0.0.0.0", port=5000)
     print("Server started.")

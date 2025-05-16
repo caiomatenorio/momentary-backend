@@ -87,10 +87,11 @@ def get_user_by_id_or_raise(user_id: int, *, for_update: bool = False) -> User:
 
 
 def whoami() -> dict:
+    current_session_data = session_service.get_current_session_data()
     current_user_data = {
-        "user_id": g.get("current_user_id"),
-        "username": g.get("current_username"),
-        "name": g.get("current_name"),
+        "user_id": current_session_data.get("user_id"),
+        "username": current_session_data.get("username"),
+        "name": current_session_data.get("name"),
     }
 
     return current_user_data
@@ -98,7 +99,7 @@ def whoami() -> dict:
 
 def update_name(new_name: str) -> None:
     with db.session.begin():
-        user_id = g.get("current_user_id")
+        user_id = session_service.get_current_session_data().get("user_id")
         user = get_user_by_id_or_raise(user_id, for_update=True)
         user.name = new_name
         db.session.add(user)
@@ -109,7 +110,7 @@ def update_username(new_username: str) -> None:
         if user_exists(new_username, for_update=True):
             raise UsernameAlreadyInUseException()
 
-        user_id = g.get("current_user_id")
+        user_id = session_service.get_current_session_data().get("user_id")
         user = get_user_by_id_or_raise(user_id, for_update=True)
         user.username = new_username
         db.session.add(user)
@@ -117,7 +118,7 @@ def update_username(new_username: str) -> None:
 
 def update_password(old_password: str, new_password: str) -> None:
     with db.session.begin():
-        user_id = g.get("current_user_id")
+        user_id = session_service.get_current_session_data().get("user_id")
         user = get_user_by_id_or_raise(user_id, for_update=True)
 
         if not check_password(old_password, user.password_hash):

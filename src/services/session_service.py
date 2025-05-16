@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import jwt
-from flask import Request, Response, g
+from flask import Request, Response, g, request
 from sqlalchemy.exc import IntegrityError
 
 from ..env import env
@@ -56,11 +56,20 @@ def is_jwt_valid(jwt: str) -> bool:
         return False
 
 
+def get_new_tokens() -> tuple[str | None, str | None]:
+    new_auth_token = g.get("new_auth_token")
+    new_refresh_token = g.get("new_refresh_token")
+
+    return new_auth_token, new_refresh_token
+
+
 def add_session_cookies(response: Response) -> None:
-    if g.get("new_auth_token") and g.get("new_refresh_token"):
+    new_auth_token, new_refresh_token = get_new_tokens()
+
+    if new_auth_token and new_refresh_token:
         response.set_cookie(
             "auth_token",
-            g.get("new_auth_token"),
+            new_auth_token,
             max_age=env.JWT_EXPIRATION_SECS,
             httponly=True,
             secure=env.ENV == "production",
@@ -69,7 +78,7 @@ def add_session_cookies(response: Response) -> None:
 
         response.set_cookie(
             "refresh_token",
-            g.get("new_refresh_token"),
+            new_refresh_token,
             max_age=env.SESSION_EXPIRATION_SECS,
             httponly=True,
             secure=env.ENV == "production",
@@ -106,45 +115,7 @@ def extract_session_tokens_from_request(
     return auth_token, refresh_token
 
 
-def signin(username: str, password: str) -> None:
-    with db.session.begin():
-        user_service.validate_credentials(username, password)
-        user = user_service.get_user_by_username_or_raise(username)
-        session = create_session(user)
-        auth_token = create_jwt(session.id, user.id, user.username, user.name)
-
-        g.new_auth_token = auth_token
-        g.new_refresh_token = session.refresh_token
-
-
-def refresh_session(refresh_token: str) -> tuple[str, str]:
-    with db.session.begin():
-        session = (
-            db.session.query(Session)
-            .filter_by(refresh_token=refresh_token)
-            .with_for_update()
-            .first()
-        )
-
-        if not session:
-            raise SessionNotFoundException()
-
-        if session.expires_at < datetime.now(timezone.utc):
-            with db.session.begin_nested():
-                db.session.delete(session)
-            raise SessionExpiredException()
-
-        session.refresh_token = Session.generate_refresh_token()
-        session.expires_at = Session.calculate_expiration()
-        session.updated_at = datetime.now(timezone.utc)
-        db.session.add(session)
-        user = user_service.get_user_by_id_or_raise(session.user_id)
-        jwt = create_jwt(session.id, user.id, user.username, user.name)
-
-        return jwt, session.refresh_token
-
-
-def set_current_session_info(auth_token):
+def set_current_session_data(auth_token) -> None:
     payload_data = decode_jwt(auth_token)["data"]
     g.current_session_id = payload_data["session_id"]
     g.current_user_id = payload_data["user_id"]
@@ -152,22 +123,13 @@ def set_current_session_info(auth_token):
     g.current_name = payload_data["name"]
 
 
-def validate_session(request: Request) -> None:
-    auth_token, refresh_token = extract_session_tokens_from_request(request)
-
-    if auth_token and is_jwt_valid(auth_token):
-        set_current_session_info(auth_token)
-        return
-
-    if refresh_token:
-        try:
-            g.new_auth_token, g.new_refresh_token = refresh_session(refresh_token)
-            set_current_session_info(g.new_auth_token)
-            return
-        except (SessionNotFoundException, SessionExpiredException, IntegrityError):
-            pass
-
-    raise UnauthorizedException()
+def get_current_session_data() -> dict:
+    return {
+        "session_id": g.get("current_session_id"),
+        "user_id": g.get("current_user_id"),
+        "username": g.get("current_username"),
+        "name": g.get("current_name"),
+    }
 
 
 def get_session_by_id(session_id: UUID, *, for_update: bool = False) -> Session | None:
@@ -191,9 +153,81 @@ def get_session_by_id_or_raise(
     return session
 
 
+def signin(username: str, password: str) -> None:
+    with db.session.begin():
+        user_service.validate_credentials(username, password)
+        user = user_service.get_user_by_username_or_raise(username)
+        session = create_session(user)
+        auth_token = create_jwt(session.id, user.id, user.username, user.name)
+
+        g.new_auth_token = auth_token
+        g.new_refresh_token = session.refresh_token
+
+
+def validate_session(
+    *,
+    auth_token: str | None = None,
+    refresh_token: str | None = None,
+) -> None:
+    if not auth_token and not refresh_token:
+        auth_token, refresh_token = extract_session_tokens_from_request(request)
+
+    if auth_token and is_jwt_valid(auth_token):
+        set_current_session_data(auth_token)
+        return
+
+    if refresh_token:
+        try:
+            g.new_auth_token, g.new_refresh_token = refresh_session(
+                refresh_token=refresh_token
+            )
+            set_current_session_data(g.new_auth_token)
+            return
+        except (SessionNotFoundException, SessionExpiredException, IntegrityError):
+            pass
+
+    raise UnauthorizedException()
+
+
+def refresh_session(
+    *,
+    refresh_token: str = None,
+    session_id: UUID = None,
+) -> tuple[str, str]:
+    if not refresh_token and not session_id:
+        raise ValueError("Either refresh_token or session_id must be provided")
+
+    with db.session.begin():
+        query = db.session.query(Session)
+
+        if refresh_token:
+            query = query.filter_by(refresh_token=refresh_token)
+        else:
+            query = query.filter_by(id=session_id)
+
+        session = query.with_for_update().first()
+
+        if not session:
+            raise SessionNotFoundException()
+
+        if session.expires_at < datetime.now(timezone.utc):
+            with db.session.begin_nested():
+                db.session.delete(session)
+            raise SessionExpiredException()
+
+        session.refresh_token = Session.generate_refresh_token()
+        session.expires_at = Session.calculate_expiration()
+        session.updated_at = datetime.now(timezone.utc)
+        db.session.add(session)
+        user = user_service.get_user_by_id_or_raise(session.user_id)
+        jwt = create_jwt(session.id, user.id, user.username, user.name)
+
+        return jwt, session.refresh_token
+
+
 def signout() -> None:
     with db.session.begin():
-        session_id = g.get("current_session_id")
+        session_id = get_current_session_data().get("session_id")
         session = get_session_by_id_or_raise(session_id)
         db.session.delete(session)
 
@@ -208,4 +242,5 @@ def clean_expired_sessions() -> None:
         )
 
         for expired_session in expired_sessions:
+            db.session.delete(expired_session)
             db.session.delete(expired_session)

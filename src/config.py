@@ -6,8 +6,6 @@ from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from marshmallow import ValidationError
 
-from src.sockets.message_namespace import MessageNamespace
-
 from .env import env
 from .error_handler import (
     handle_http_exception,
@@ -50,8 +48,5 @@ def create_app(
     app.register_error_handler(HttpException, handle_http_exception)
     app.register_error_handler(ValidationError, handle_validation_error)
     app.register_error_handler(UnauthorizedException, handle_unauthorized_exception)
-
-    # Register socket namespaces
-    socketio.on_namespace(MessageNamespace("/message"))
 
     return app

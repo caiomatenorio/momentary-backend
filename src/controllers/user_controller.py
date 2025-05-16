@@ -1,7 +1,7 @@
 from flask import request
 
 from ..blueprints.api import api
-from ..decorators.requires_authentication import requires_authentication
+from ..decorators.requires_rest_authentication import requires_rest_authentication
 from ..dtos.success_response_body import SuccessResponseBody
 from ..schemas.user_controller.signup_schema import SignupSchema
 from ..schemas.user_controller.update_name_schema import UpdateNameSchema
@@ -22,7 +22,7 @@ def signup():
 
 
 @api.get("/me/whoami")
-@requires_authentication(request)
+@requires_rest_authentication
 def whoami():
     user = user_service.whoami()
     return SuccessResponseBody(
@@ -31,7 +31,7 @@ def whoami():
 
 
 @api.put("/me/name")
-@requires_authentication(request)
+@requires_rest_authentication
 def update_name():
     body = UpdateNameSchema().load(request.json)
     user_service.update_name(name=body.get("name"))
@@ -39,7 +39,7 @@ def update_name():
 
 
 @api.put("/me/username")
-@requires_authentication(request)
+@requires_rest_authentication
 def update_username():
     body = UpdateUsernameSchema().load(request.json)
     user_service.update_username(username=body.get("username"))
@@ -47,7 +47,7 @@ def update_username():
 
 
 @api.put("/me/password")
-@requires_authentication(request)
+@requires_rest_authentication
 def update_password():
     body = UpdatePasswordSchema().load(request.json)
     user_service.update_password(
