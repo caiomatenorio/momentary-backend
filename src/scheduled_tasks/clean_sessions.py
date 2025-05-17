@@ -1,4 +1,4 @@
-from ..app import app
+from ..app_instance import app
 from ..libs.scheduler import scheduler
 from ..services import session_service
 
