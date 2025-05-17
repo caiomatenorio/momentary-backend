@@ -1,15 +1,11 @@
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from ..common_exception import CommonException
 
 
-@dataclass
-class HttpException(Exception, ABC):
+class HttpException(CommonException):
+    def __init__(self, status_code: int, message: str):
+        super().__init__(message)
+        self._status_code = status_code
+
     @property
-    @abstractmethod
     def status_code(self) -> int:
-        pass
-
-    @property
-    @abstractmethod
-    def message(self) -> str:
-        pass
+        return self._status_code

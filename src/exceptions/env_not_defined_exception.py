@@ -1,9 +1,11 @@
-class EnvNotDefinedException(Exception):
+from .common_exception import CommonException
+
+
+class EnvNotDefinedException(CommonException):
     def __init__(self, key) -> None:
-        self.key = key
-        self.message = f"Environment variable '{key}' not defined"
+        self._key = key
+        super().__init__(f"Environment variable '{key}' not defined")
 
-        super().__init__(self.message)
-
-    def __str__(self) -> str:
-        return self.message
+    @property
+    def key(self) -> str:
+        return self._key

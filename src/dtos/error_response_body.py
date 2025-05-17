@@ -13,9 +13,7 @@ class ErrorResponseBody(ResponseBody):
     message: str
     errors: Optional[list[str] | list | dict] = None
 
-    def to_response(
-        self, *, remove_session_cookies: bool = False
-    ) -> tuple[Response, int]:
+    def to_response(self, *, remove_session_cookies: bool = False) -> Response:
         body = self.__dict__.copy()
 
         if self.errors is None:

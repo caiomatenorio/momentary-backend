@@ -1,9 +1,14 @@
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+
 from flask import Response
 
 
-class ResponseBody:
+@dataclass
+class ResponseBody(ABC):
     status_code: int
     message: str
 
-    def to_response(self) -> tuple[Response, int]:
-        raise NotImplementedError("Subclasses must implement this method")
+    @abstractmethod
+    def to_response(self) -> Response:
+        pass

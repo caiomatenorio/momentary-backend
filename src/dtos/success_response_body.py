@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from flask import Response, jsonify, make_response
 
@@ -11,11 +11,9 @@ from .response_body import ResponseBody
 class SuccessResponseBody(ResponseBody):
     status_code: int
     message: str
-    data: Optional[any] = None
+    data: Optional[Any] = None
 
-    def to_response(
-        self, *, remove_session_cookies: bool = False
-    ) -> tuple[Response, int]:
+    def to_response(self, *, remove_session_cookies: bool = False) -> Response:
         body = self.__dict__.copy()
 
         if self.data is None:

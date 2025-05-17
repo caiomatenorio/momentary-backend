@@ -2,7 +2,7 @@ from typing import List
 from uuid import UUID, uuid4
 
 from sqlalchemy import UUID as SQLAlchemyUUID
-from sqlalchemy import Enum, ForeignKey
+from sqlalchemy import Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..libs.sqlalchemy import db

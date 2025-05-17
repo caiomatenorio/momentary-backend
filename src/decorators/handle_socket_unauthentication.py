@@ -1,4 +1,5 @@
 from functools import wraps
+from typing import Callable
 
 from flask import g
 
@@ -6,7 +7,7 @@ from ..exceptions.http_exceptions.unauthorized_exception import UnauthorizedExce
 from ..services import session_service, socket_service
 
 
-def handle_socket_unauthentication(function: callable) -> callable:
+def handle_socket_unauthentication(function: Callable) -> Callable:
     """
     Decorator to handle socket unauthentication by refreshing the session if needed. It stores the new auth and refresh
     tokens to return to the client.
@@ -14,12 +15,12 @@ def handle_socket_unauthentication(function: callable) -> callable:
 
     @wraps(function)
     def wrapper(*args, **kwargs):
-        user_data = socket_service.get_socket_session_data_by_sid()
+        session_data = socket_service.get_socket_session_data_by_sid()
 
-        if user_data and (session_id := user_data.get("session_id")):
+        if session_data and (session_id := session_data.session_id):
             try:
-                g.new_auth_token, g.new_refresh_token = session_service.refresh_session(
-                    session_id=session_id
+                session_service.set_new_tokens(
+                    *session_service.refresh_session(session_id=session_id)
                 )
             except UnauthorizedException:
                 pass

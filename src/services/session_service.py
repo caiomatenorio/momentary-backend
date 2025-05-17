@@ -1,9 +1,13 @@
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 from uuid import UUID
 
 import jwt
 from flask import Request, Response, g, request
 from sqlalchemy.exc import IntegrityError
+
+from src.dtos.current_session_data import CurrentSessionData
+from src.dtos.current_user_data import CurrentUserData
 
 from ..env import env
 from ..exceptions.http_exceptions.unauthorized_exception import UnauthorizedException
@@ -16,7 +20,7 @@ from . import user_service
 
 
 def create_session(user: User) -> Session:
-    session = Session(user=user)
+    session = Session(user=user)  # type: ignore
     db.session.add(session)
     return session
 
@@ -54,6 +58,11 @@ def is_jwt_valid(jwt: str) -> bool:
         return True
     except ValueError:
         return False
+
+
+def set_new_tokens(auth_token: str, refresh_token: str) -> None:
+    g.new_auth_token = auth_token
+    g.new_refresh_token = refresh_token
 
 
 def get_new_tokens() -> tuple[str | None, str | None]:
@@ -123,13 +132,23 @@ def set_current_session_data(auth_token) -> None:
     g.current_name = payload_data["name"]
 
 
-def get_current_session_data() -> dict:
-    return {
-        "session_id": g.get("current_session_id"),
-        "user_id": g.get("current_user_id"),
-        "username": g.get("current_username"),
-        "name": g.get("current_name"),
-    }
+def get_current_session_data() -> CurrentSessionData:
+    session_id: Optional[UUID] = g.get("current_session_id")
+    user_id: Optional[UUID] = g.get("current_user_id")
+    username: Optional[str] = g.get("current_username")
+    name: Optional[str] = g.get("current_name")
+
+    if not session_id or not user_id or not username or not name:
+        raise UnauthorizedException()
+
+    return CurrentSessionData(
+        session_id=session_id,
+        current_user_data=CurrentUserData(
+            user_id=user_id,
+            username=username,
+            name=name,
+        ),
+    )
 
 
 def get_session_by_id(session_id: UUID, *, for_update: bool = False) -> Session | None:
@@ -159,9 +178,7 @@ def signin(username: str, password: str) -> None:
         user = user_service.get_user_by_username_or_raise(username)
         session = create_session(user)
         auth_token = create_jwt(session.id, user.id, user.username, user.name)
-
-        g.new_auth_token = auth_token
-        g.new_refresh_token = session.refresh_token
+        set_new_tokens(auth_token, session.refresh_token)
 
 
 def validate_session(
@@ -178,10 +195,9 @@ def validate_session(
 
     if refresh_token:
         try:
-            g.new_auth_token, g.new_refresh_token = refresh_session(
-                refresh_token=refresh_token
-            )
-            set_current_session_data(g.new_auth_token)
+            auth_token, refresh_token = refresh_session(refresh_token=refresh_token)
+            set_current_session_data(auth_token)
+            set_new_tokens(auth_token, refresh_token)
             return
         except (SessionNotFoundException, SessionExpiredException, IntegrityError):
             pass
@@ -191,8 +207,8 @@ def validate_session(
 
 def refresh_session(
     *,
-    refresh_token: str = None,
-    session_id: UUID = None,
+    refresh_token: Optional[str] = None,
+    session_id: Optional[UUID] = None,
 ) -> tuple[str, str]:
     if not refresh_token and not session_id:
         raise ValueError("Either refresh_token or session_id must be provided")
@@ -227,7 +243,7 @@ def refresh_session(
 
 def signout() -> None:
     with db.session.begin():
-        session_id = get_current_session_data().get("session_id")
+        session_id = get_current_session_data().session_id
         session = get_session_by_id_or_raise(session_id)
         db.session.delete(session)
 

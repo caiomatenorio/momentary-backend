@@ -1,6 +1,10 @@
+from uuid import UUID
+
 import bcrypt
 from flask import g
 from sqlalchemy.exc import IntegrityError
+
+from src.dtos.current_user_data import CurrentUserData
 
 from ..exceptions.http_exceptions.invalid_credentials_exception import (
     InvalidCredentialsException,
@@ -38,7 +42,7 @@ def create_user(name: str, username: str, password: str) -> None:
         if user_exists(username, for_update=True):
             raise UsernameAlreadyInUseException()
 
-        user = User(name=name, username=username, password_hash=hash_password(password))
+        user = User(name=name, username=username, password_hash=hash_password(password))  # type: ignore
         db.session.add(user)
 
 
@@ -69,7 +73,7 @@ def get_user_by_username_or_raise(username: str, *, for_update: bool = False) ->
     return user
 
 
-def get_user_by_id(user_id: int, *, for_update: bool = False) -> User | None:
+def get_user_by_id(user_id: UUID, *, for_update: bool = False) -> User | None:
     query = db.session.query(User).filter_by(id=user_id)
 
     if for_update:
@@ -79,27 +83,22 @@ def get_user_by_id(user_id: int, *, for_update: bool = False) -> User | None:
     return user
 
 
-def get_user_by_id_or_raise(user_id: int, *, for_update: bool = False) -> User:
+def get_user_by_id_or_raise(user_id: UUID, *, for_update: bool = False) -> User:
     user = get_user_by_id(user_id, for_update=for_update)
     if not user:
         raise UserNotFoundException()
     return user
 
 
-def whoami() -> dict:
+def whoami() -> CurrentUserData:
     current_session_data = session_service.get_current_session_data()
-    current_user_data = {
-        "user_id": current_session_data.get("user_id"),
-        "username": current_session_data.get("username"),
-        "name": current_session_data.get("name"),
-    }
-
+    current_user_data = current_session_data.current_user_data
     return current_user_data
 
 
 def update_name(new_name: str) -> None:
     with db.session.begin():
-        user_id = session_service.get_current_session_data().get("user_id")
+        user_id = whoami().user_id
         user = get_user_by_id_or_raise(user_id, for_update=True)
         user.name = new_name
         db.session.add(user)
@@ -110,7 +109,7 @@ def update_username(new_username: str) -> None:
         if user_exists(new_username, for_update=True):
             raise UsernameAlreadyInUseException()
 
-        user_id = session_service.get_current_session_data().get("user_id")
+        user_id = whoami().user_id
         user = get_user_by_id_or_raise(user_id, for_update=True)
         user.username = new_username
         db.session.add(user)
@@ -118,7 +117,7 @@ def update_username(new_username: str) -> None:
 
 def update_password(old_password: str, new_password: str) -> None:
     with db.session.begin():
-        user_id = session_service.get_current_session_data().get("user_id")
+        user_id = whoami().user_id
         user = get_user_by_id_or_raise(user_id, for_update=True)
 
         if not check_password(old_password, user.password_hash):

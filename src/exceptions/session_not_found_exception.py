@@ -1,7 +1,6 @@
-class SessionNotFoundException(Exception):
-    def __init__(self):
-        self.message = "Session not found"
-        super().__init__(self.message)
+from .common_exception import CommonException
 
-    def __str__(self) -> str:
-        return self.message
+
+class SessionNotFoundException(CommonException):
+    def __init__(self):
+        super().__init__("Session not found")

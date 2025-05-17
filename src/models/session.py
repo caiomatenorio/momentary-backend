@@ -21,7 +21,7 @@ class Session(db.Model):
         nullable=False,
     )
 
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
 
     user: Mapped["User"] = relationship(back_populates="sessions")  # type: ignore
 

@@ -1,7 +1,6 @@
-class SessionExpiredException(Exception):
-    def __init__(self) -> None:
-        self.message = "Session has expired"
-        super().__init__(self.message)
+from .common_exception import CommonException
 
-    def __str__(self) -> str:
-        return self.message
+
+class SessionExpiredException(CommonException):
+    def __init__(self) -> None:
+        super().__init__("Session has expired")

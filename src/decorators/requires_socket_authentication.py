@@ -1,11 +1,11 @@
 from functools import wraps
+from typing import Callable
 
-from src.exceptions.http_exceptions.unauthorized_exception import UnauthorizedException
-
+from ..exceptions.http_exceptions.unauthorized_exception import UnauthorizedException
 from ..services import session_service, socket_service
 
 
-def requires_socket_authentication(function: callable) -> callable:
+def requires_socket_authentication(function: Callable) -> Callable:
     """
     Decorator to require socket authentication for an event handler (generally connect). The function requires the
     `auth` parameter to be passed in the event handler.

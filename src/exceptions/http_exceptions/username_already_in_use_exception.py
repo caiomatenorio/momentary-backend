@@ -2,5 +2,5 @@ from .http_exception import HttpException
 
 
 class UsernameAlreadyInUseException(HttpException):
-    status_code = 409
-    message = "Username already in use."
+    def __init__(self) -> None:
+        super().__init__(409, "Username already in use.")

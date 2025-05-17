@@ -46,7 +46,7 @@ class Env:
         return self._ENV
 
     @property
-    def MESSAGE_TTL_SECS(self) -> str:
+    def MESSAGE_TTL_SECS(self) -> int:
         return self._MESSAGE_TTL_SECS
 
     @property
