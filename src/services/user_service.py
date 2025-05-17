@@ -4,7 +4,7 @@ import bcrypt
 from flask import g
 from sqlalchemy.exc import IntegrityError
 
-from src.dtos.current_user_data import CurrentUserData
+from src.dtos.user_data import UserData
 
 from ..exceptions.http_exceptions.invalid_credentials_exception import (
     InvalidCredentialsException,
@@ -90,9 +90,9 @@ def get_user_by_id_or_raise(user_id: UUID, *, for_update: bool = False) -> User:
     return user
 
 
-def whoami() -> CurrentUserData:
+def whoami() -> UserData:
     current_session_data = session_service.get_current_session_data()
-    current_user_data = current_session_data.current_user_data
+    current_user_data = current_session_data.user_data
     return current_user_data
 
 

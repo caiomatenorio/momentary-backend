@@ -6,8 +6,9 @@ import jwt
 from flask import Request, Response, g, request
 from sqlalchemy.exc import IntegrityError
 
-from src.dtos.current_session_data import CurrentSessionData
-from src.dtos.current_user_data import CurrentUserData
+from src.dtos.jwt_payload import JwtPayload
+from src.dtos.session_data import SessionData
+from src.dtos.user_data import UserData
 
 from ..env import env
 from ..exceptions.http_exceptions.unauthorized_exception import UnauthorizedException
@@ -28,35 +29,37 @@ def create_session(user: User) -> Session:
 def create_jwt(session_id: UUID, user_id: UUID, username: str, name: str) -> str:
     jwt_expiration_secs = env.JWT_EXPIRATION_SECS
 
-    payload = {
-        "data": {
-            "session_id": str(session_id),
-            "user_id": str(user_id),
-            "username": username,
-            "name": name,
-        },
-        "exp": datetime.now(timezone.utc) + timedelta(seconds=jwt_expiration_secs),
-        "iat": datetime.now(timezone.utc),
-    }
+    now = datetime.now(timezone.utc)
+    payload = JwtPayload(
+        data=SessionData(
+            session_id=session_id,
+            user_data=UserData(
+                user_id=user_id,
+                username=username,
+                name=name,
+            ),
+        ),
+        exp=int((now + timedelta(seconds=jwt_expiration_secs)).timestamp()),
+        iat=int(now.timestamp()),
+    )
 
-    return jwt.encode(payload, env.JWT_SECRET_KEY, algorithm="HS256")
+    return jwt.encode(payload.__dict__, env.JWT_SECRET_KEY, algorithm="HS256")
 
 
-def decode_jwt(token: str) -> dict:
+def decode_jwt(token: str) -> JwtPayload:
     try:
-        payload = jwt.decode(token, env.JWT_SECRET_KEY, algorithms=["HS256"])
+        decoded_jwt = jwt.decode(token, env.JWT_SECRET_KEY, algorithms=["HS256"])
+        payload = JwtPayload.from_dict(decoded_jwt)
         return payload
-    except jwt.ExpiredSignatureError:
-        raise ValueError("Token has expired")  # TODO: create a custom exception
-    except jwt.InvalidTokenError:
-        raise ValueError("Invalid token")  # TODO: create a custom exception
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        raise UnauthorizedException()
 
 
 def is_jwt_valid(jwt: str) -> bool:
     try:
         decode_jwt(jwt)
         return True
-    except ValueError:
+    except UnauthorizedException:
         return False
 
 
@@ -65,7 +68,7 @@ def set_new_tokens(auth_token: str, refresh_token: str) -> None:
     g.new_refresh_token = refresh_token
 
 
-def get_new_tokens() -> tuple[str | None, str | None]:
+def get_new_tokens() -> tuple[Optional[str], Optional[str]]:
     new_auth_token = g.get("new_auth_token")
     new_refresh_token = g.get("new_refresh_token")
 
@@ -117,22 +120,23 @@ def remove_session_cookies(response: Response) -> None:
 
 def extract_session_tokens_from_request(
     request: Request,
-) -> tuple[str | None, str | None]:
+) -> tuple[Optional[str], Optional[str]]:
     auth_token = request.cookies.get("auth_token")
     refresh_token = request.cookies.get("refresh_token")
 
     return auth_token, refresh_token
 
 
-def set_current_session_data(auth_token) -> None:
-    payload_data = decode_jwt(auth_token)["data"]
-    g.current_session_id = payload_data["session_id"]
-    g.current_user_id = payload_data["user_id"]
-    g.current_username = payload_data["username"]
-    g.current_name = payload_data["name"]
+def set_current_session_data(auth_token: str) -> None:
+    payload_data = decode_jwt(auth_token).data
+
+    g.current_session_id = payload_data.session_id
+    g.current_user_id = payload_data.user_data.user_id
+    g.current_username = payload_data.user_data.username
+    g.current_name = payload_data.user_data.name
 
 
-def get_current_session_data() -> CurrentSessionData:
+def get_current_session_data() -> SessionData:
     session_id: Optional[UUID] = g.get("current_session_id")
     user_id: Optional[UUID] = g.get("current_user_id")
     username: Optional[str] = g.get("current_username")
@@ -141,9 +145,9 @@ def get_current_session_data() -> CurrentSessionData:
     if not session_id or not user_id or not username or not name:
         raise UnauthorizedException()
 
-    return CurrentSessionData(
+    return SessionData(
         session_id=session_id,
-        current_user_data=CurrentUserData(
+        user_data=UserData(
             user_id=user_id,
             username=username,
             name=name,
@@ -151,7 +155,11 @@ def get_current_session_data() -> CurrentSessionData:
     )
 
 
-def get_session_by_id(session_id: UUID, *, for_update: bool = False) -> Session | None:
+def get_session_by_id(
+    session_id: UUID,
+    *,
+    for_update: bool = False,
+) -> Optional[Session]:
     query = db.session.query(Session).filter_by(id=session_id)
 
     if for_update:
@@ -162,7 +170,9 @@ def get_session_by_id(session_id: UUID, *, for_update: bool = False) -> Session 
 
 
 def get_session_by_id_or_raise(
-    session_id: UUID, *, for_update: bool = False
+    session_id: UUID,
+    *,
+    for_update: bool = False,
 ) -> Session:
     session = get_session_by_id(session_id, for_update=for_update)
 
