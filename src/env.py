@@ -19,7 +19,6 @@ class Env:
         self._FLASK_ENV = self._get_env_var("FLASK_ENV")
         self._MESSAGE_TTL_SECS = int(self._get_env_var("MESSAGE_TTL_SECS"))
         self._REDIS_URL = self._get_env_var("REDIS_URL")
-        self._REDIS_TOKEN = self._get_env_var("REDIS_TOKEN")
 
     @property
     def DB_URL(self) -> str:
@@ -53,11 +52,8 @@ class Env:
     def REDIS_URL(self) -> str:
         return self._REDIS_URL
 
-    @property
-    def REDIS_TOKEN(self) -> str:
-        return self._REDIS_TOKEN
-
-    def _get_env_var(self, key: str) -> str:
+    @staticmethod
+    def _get_env_var(key: str) -> str:
         value = os.getenv(key)
 
         if not value:
