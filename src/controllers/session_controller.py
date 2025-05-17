@@ -9,8 +9,8 @@ from ..services import session_service
 
 @api.post("/signin")
 def signin():
-    body = SigninSchema().load(request.json)
-    session_service.signin(username=body.get("username"), password=body.get("password"))
+    body = SigninSchema().load(request.json)  # type: ignore
+    session_service.signin(username=body.get("username"), password=body.get("password"))  # type: ignore
     return SuccessResponseBody(200, "User signed in successfully").to_response()
 
 

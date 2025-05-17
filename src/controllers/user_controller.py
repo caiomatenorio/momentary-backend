@@ -12,11 +12,11 @@ from ..services import user_service
 
 @api.post("/signup")
 def signup():
-    body = SignupSchema().load(request.json)
+    body = SignupSchema().load(request.json)  # type: ignore
     user_service.create_user(
-        name=body.get("name"),
-        username=body.get("username"),
-        password=body.get("password"),
+        name=body.get("name"),  # type: ignore
+        username=body.get("username"),  # type: ignore
+        password=body.get("password"),  # type: ignore
     )
     return SuccessResponseBody(201, "User created successfully").to_response()
 
@@ -33,24 +33,25 @@ def whoami():
 @api.put("/me/name")
 @requires_rest_authentication
 def update_name():
-    body = UpdateNameSchema().load(request.json)
-    user_service.update_name(name=body.get("name"))
+    body = UpdateNameSchema().load(request.json)  # type: ignore
+    user_service.update_name(name=body.get("name"))  # type: ignore
     return SuccessResponseBody(200, "User name updated successfully").to_response()
 
 
 @api.put("/me/username")
 @requires_rest_authentication
 def update_username():
-    body = UpdateUsernameSchema().load(request.json)
-    user_service.update_username(username=body.get("username"))
+    body = UpdateUsernameSchema().load(request.json)  # type: ignore
+    user_service.update_username(username=body.get("username"))  # type: ignore
     return SuccessResponseBody(200, "User username updated successfully").to_response()
 
 
 @api.put("/me/password")
 @requires_rest_authentication
 def update_password():
-    body = UpdatePasswordSchema().load(request.json)
+    body = UpdatePasswordSchema().load(request.json)  # type: ignore
     user_service.update_password(
-        old_password=body.get("old_password"), new_password=body.get("new_password")
+        old_password=body.get("old_password"),  # type: ignore
+        new_password=body.get("new_password"),  # type: ignore
     )
     return SuccessResponseBody(200, "User password updated successfully").to_response()

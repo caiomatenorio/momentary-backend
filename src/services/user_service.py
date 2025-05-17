@@ -1,8 +1,6 @@
 from uuid import UUID
 
 import bcrypt
-from flask import g
-from sqlalchemy.exc import IntegrityError
 
 from src.dtos.user_data import UserData
 

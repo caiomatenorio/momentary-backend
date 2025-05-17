@@ -104,7 +104,7 @@ def remove_session_cookies(response: Response) -> None:
         "",
         expires=0,
         httponly=True,
-        secure=env.ENV == "production",
+        secure=(env.ENV == "production"),
         samesite="Strict",
     )
 
@@ -113,7 +113,7 @@ def remove_session_cookies(response: Response) -> None:
         "",
         expires=0,
         httponly=True,
-        secure=env.ENV == "production",
+        secure=(env.ENV == "production"),
         samesite="Strict",
     )
 
