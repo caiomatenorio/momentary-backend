@@ -1,3 +1,4 @@
+import asyncio
 from functools import wraps
 from typing import Callable
 
@@ -15,7 +16,7 @@ def handle_socket_unauthentication(function: Callable) -> Callable:
 
     @wraps(function)
     def wrapper(*args, **kwargs):
-        session_data = socket_service.get_socket_session_data_by_sid()
+        session_data = asyncio.run(socket_service.get_socket_session_data_by_sid())
 
         if session_data and (session_id := session_data.session_id):
             try:

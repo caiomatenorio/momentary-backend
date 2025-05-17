@@ -84,7 +84,7 @@ def add_session_cookies(response: Response) -> None:
             new_auth_token,
             max_age=env.JWT_EXPIRATION_SECS,
             httponly=True,
-            secure=env.ENV == "production",
+            secure=env.FLASK_ENV == "production",
             samesite="Strict",
         )
 
@@ -93,7 +93,7 @@ def add_session_cookies(response: Response) -> None:
             new_refresh_token,
             max_age=env.SESSION_EXPIRATION_SECS,
             httponly=True,
-            secure=env.ENV == "production",
+            secure=env.FLASK_ENV == "production",
             samesite="Strict",
         )
 
@@ -104,7 +104,7 @@ def remove_session_cookies(response: Response) -> None:
         "",
         expires=0,
         httponly=True,
-        secure=(env.ENV == "production"),
+        secure=(env.FLASK_ENV == "production"),
         samesite="Strict",
     )
 
@@ -113,7 +113,7 @@ def remove_session_cookies(response: Response) -> None:
         "",
         expires=0,
         httponly=True,
-        secure=(env.ENV == "production"),
+        secure=(env.FLASK_ENV == "production"),
         samesite="Strict",
     )
 

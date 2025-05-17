@@ -16,7 +16,7 @@ class Env:
         )
         self._JWT_SECRET_KEY = self._get_env_var("JWT_SECRET_KEY")
         self._JWT_EXPIRATION_SECS = int(self._get_env_var("JWT_EXPIRATION_SECS"))
-        self._ENV = self._get_env_var("ENV")
+        self._FLASK_ENV = self._get_env_var("FLASK_ENV")
         self._MESSAGE_TTL_SECS = int(self._get_env_var("MESSAGE_TTL_SECS"))
         self._REDIS_URL = self._get_env_var("REDIS_URL")
         self._REDIS_TOKEN = self._get_env_var("REDIS_TOKEN")
@@ -42,8 +42,8 @@ class Env:
         return self._JWT_EXPIRATION_SECS
 
     @property
-    def ENV(self) -> str:
-        return self._ENV
+    def FLASK_ENV(self) -> str:
+        return self._FLASK_ENV
 
     @property
     def MESSAGE_TTL_SECS(self) -> int:

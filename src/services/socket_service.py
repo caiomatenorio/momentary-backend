@@ -1,3 +1,5 @@
+import asyncio
+from collections.abc import Awaitable
 from typing import Optional
 
 from flask import request
@@ -10,12 +12,17 @@ from ..services import session_service
 def store_socket_session_data() -> None:
     session_data = session_service.get_current_session_data()
     db_key = f"socket_session:{request.sid}"  # type: ignore
-    redis.hset(db_key, values=session_data.flatten())
+    redis.hset(db_key, mapping=session_data.flatten())
 
 
-def get_socket_session_data_by_sid() -> Optional[SessionData]:
+async def get_socket_session_data_by_sid() -> Optional[SessionData]:
     db_key = f"socket_session:{request.sid}"  # type: ignore
-    flattened_session_data = redis.hgetall(db_key)
+    query = redis.hgetall(db_key)
+    flattened_session_data = (
+        await query
+        if asyncio.iscoroutine(query) or isinstance(query, Awaitable)
+        else query
+    )
 
     if not flattened_session_data:
         return
