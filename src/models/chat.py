@@ -28,7 +28,7 @@ class Chat(db.Model):
     )
 
     messages: Mapped[List["Message"]] = relationship(  # type: ignore
-        back_populates="conversation",
+        back_populates="chat",
         cascade="all, delete-orphan",
     )
 

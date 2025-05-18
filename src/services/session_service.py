@@ -20,9 +20,10 @@ from ..models.user import User
 from . import user_service
 
 
-def create_session(user: User) -> Session:
-    session = Session(user=user)  # type: ignore
-    db.session.add(session)
+def create_session(user_id: UUID) -> Session:
+    with db.session.begin_nested():
+        session = Session(user_id=user_id)  # type: ignore
+        db.session.add(session)
     return session
 
 
@@ -43,7 +44,7 @@ def create_jwt(session_id: UUID, user_id: UUID, username: str, name: str) -> str
         iat=int(now.timestamp()),
     )
 
-    return jwt.encode(payload.__dict__, env.JWT_SECRET_KEY, algorithm="HS256")
+    return jwt.encode(payload.to_dict(), env.JWT_SECRET_KEY, algorithm="HS256")
 
 
 def decode_jwt(token: str) -> JwtPayload:
@@ -184,9 +185,9 @@ def get_session_by_id_or_raise(
 
 def signin(username: str, password: str) -> None:
     with db.session.begin():
-        user_service.validate_credentials(username, password)
-        user = user_service.get_user_by_username_or_raise(username)
-        session = create_session(user)
+        user_service.validate_credentials(username, password, for_update=True)
+        user = user_service.get_user_by_username_or_raise(username, for_update=True)
+        session = create_session(user.id)
         auth_token = create_jwt(session.id, user.id, user.username, user.name)
         set_new_tokens(auth_token, session.refresh_token)
 

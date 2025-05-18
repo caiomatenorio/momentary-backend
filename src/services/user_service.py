@@ -47,8 +47,12 @@ def create_user(name: str, username: str, password: str) -> None:
 def validate_credentials(
     username: str, password: str, *, for_update: bool = False
 ) -> None:
-    user = get_user_by_username_or_raise(username, for_update=for_update)
-    are_valid = check_password(password, user.password_hash) if user else False
+    try:
+        user = get_user_by_username_or_raise(username, for_update=for_update)
+    except UserNotFoundException:
+        are_valid = False
+    else:
+        are_valid = check_password(password, user.password_hash) if user else False
 
     if not are_valid:
         raise InvalidCredentialsException()

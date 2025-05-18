@@ -9,6 +9,13 @@ class JwtPayload:
     exp: int
     iat: int
 
+    def to_dict(self) -> dict:
+        return {
+            "data": self.data.to_dict(),
+            "exp": self.exp,
+            "iat": self.iat,
+        }
+
     @staticmethod
     def from_dict(data: dict) -> "JwtPayload":
         return JwtPayload(

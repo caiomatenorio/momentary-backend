@@ -1,3 +1,4 @@
+from typing import List
 from uuid import UUID, uuid4
 
 from sqlalchemy import UUID as SQLAlchemyUUID
@@ -32,6 +33,11 @@ class ChatParticipant(db.Model):
     user: Mapped["User"] = relationship(back_populates="chat_participations")  # type: ignore
 
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False)
+
+    messages: Mapped[List["Message"]] = relationship(  # type: ignore
+        back_populates="sender",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<ChatParticipant {self.id}>"

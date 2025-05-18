@@ -2,7 +2,16 @@ from marshmallow import Schema, fields, validate
 
 
 class SignupSchema(Schema):
-    name = fields.Str(required=True, validate=validate.Length(min=1, max=64))
+    name = fields.Str(
+        required=True,
+        validate=[
+            validate.Length(min=1, max=64),
+            validate.Regexp(
+                r"^(?=.*\S).+$",
+                error="Name must contain at least one non-blank character",
+            ),
+        ],
+    )
 
     username = fields.Str(
         required=True,
