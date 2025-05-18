@@ -56,74 +56,40 @@ def decode_jwt(token: str) -> JwtPayload:
         raise UnauthorizedException()
 
 
-def is_jwt_valid(jwt: str) -> bool:
-    try:
-        decode_jwt(jwt)
-        return True
-    except UnauthorizedException:
-        return False
-
-
 def set_new_tokens(auth_token: str, refresh_token: str) -> None:
-    g.new_auth_token = auth_token
-    g.new_refresh_token = refresh_token
+    g.auth_token = auth_token
+    g.refresh_token = refresh_token
 
 
 def get_new_tokens() -> tuple[Optional[str], Optional[str]]:
-    new_auth_token = g.get("new_auth_token")
-    new_refresh_token = g.get("new_refresh_token")
+    auth_token = g.get("auth_token")
+    refresh_token = g.get("refresh_token")
 
-    return new_auth_token, new_refresh_token
-
-
-def add_session_cookies(response: Response) -> None:
-    new_auth_token, new_refresh_token = get_new_tokens()
-
-    if new_auth_token and new_refresh_token:
-        response.set_cookie(
-            "auth_token",
-            new_auth_token,
-            max_age=env.JWT_EXPIRATION_SECS,
-            httponly=True,
-            secure=env.FLASK_ENV == "production",
-            samesite="Strict",
-        )
-
-        response.set_cookie(
-            "refresh_token",
-            new_refresh_token,
-            max_age=env.SESSION_EXPIRATION_SECS,
-            httponly=True,
-            secure=env.FLASK_ENV == "production",
-            samesite="Strict",
-        )
+    return auth_token, refresh_token
 
 
-def remove_session_cookies(response: Response) -> None:
-    response.set_cookie(
-        "auth_token",
-        "",
-        expires=0,
-        httponly=True,
-        secure=(env.FLASK_ENV == "production"),
-        samesite="Strict",
-    )
+def add_session_headers(response: Response) -> None:
+    auth_token, refresh_token = get_new_tokens()
 
-    response.set_cookie(
-        "refresh_token",
-        "",
-        expires=0,
-        httponly=True,
-        secure=(env.FLASK_ENV == "production"),
-        samesite="Strict",
-    )
+    if auth_token and refresh_token:
+        response.headers.add("Authorization", f"Bearer {auth_token}|{refresh_token}")
+
+
+def add_clear_session_headers(response: Response) -> None:
+    response.headers.add("Authorization", None)
 
 
 def extract_session_tokens_from_request(
     request: Request,
 ) -> tuple[Optional[str], Optional[str]]:
-    auth_token = request.cookies.get("auth_token")
-    refresh_token = request.cookies.get("refresh_token")
+    auth_token, refresh_token = None, None
+    authorization = request.headers.get("Authorization")
+
+    if authorization:
+        authorization = authorization.removeprefix("Bearer ").split("|", 1)
+
+        if len(authorization) == 2 and all(authorization):
+            auth_token, refresh_token = authorization
 
     return auth_token, refresh_token
 
@@ -200,9 +166,12 @@ def validate_session(
     if not auth_token and not refresh_token:
         auth_token, refresh_token = extract_session_tokens_from_request(request)
 
-    if auth_token and is_jwt_valid(auth_token):
-        set_current_session_data(auth_token)
-        return
+    if auth_token:
+        try:
+            set_current_session_data(auth_token)
+            return
+        except UnauthorizedException:  # If token is invalid or expired, try to refresh
+            pass
 
     if refresh_token:
         try:
@@ -210,7 +179,7 @@ def validate_session(
             set_current_session_data(auth_token)
             set_new_tokens(auth_token, refresh_token)
             return
-        except (SessionNotFoundException, SessionExpiredException, IntegrityError):
+        except (SessionNotFoundException, SessionExpiredException):
             pass
 
     raise UnauthorizedException()

@@ -21,7 +21,7 @@ def signup():
     return SuccessResponseBody(201, "User created successfully").to_response()
 
 
-@api.get("/me/whoami")
+@api.get("users/me")
 @requires_rest_authentication
 def whoami():
     user = user_service.whoami()
@@ -30,7 +30,7 @@ def whoami():
     ).to_response()
 
 
-@api.put("/me/name")
+@api.put("users/me/name")
 @requires_rest_authentication
 def update_name():
     body = UpdateNameSchema().load(request.json)  # type: ignore
@@ -38,7 +38,7 @@ def update_name():
     return SuccessResponseBody(200, "User name updated successfully").to_response()
 
 
-@api.put("/me/username")
+@api.put("users/me/username")
 @requires_rest_authentication
 def update_username():
     body = UpdateUsernameSchema().load(request.json)  # type: ignore
@@ -46,7 +46,7 @@ def update_username():
     return SuccessResponseBody(200, "User username updated successfully").to_response()
 
 
-@api.put("/me/password")
+@api.put("users/me/password")
 @requires_rest_authentication
 def update_password():
     body = UpdatePasswordSchema().load(request.json)  # type: ignore

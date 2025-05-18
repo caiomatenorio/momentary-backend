@@ -19,5 +19,5 @@ def signin():
 def signout():
     session_service.signout()
     return SuccessResponseBody(200, "User signed out successfully").to_response(
-        remove_session_cookies=True
+        clear_session=True
     )
