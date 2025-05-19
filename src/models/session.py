@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..env import env
 from ..libs.sqlalchemy import db
+from ..services import refresh_token_service
 
 
 class Session(db.Model):
@@ -44,7 +45,8 @@ class Session(db.Model):
     )
 
     refresh_token: Mapped[str] = mapped_column(
-        default=lambda: Session.generate_refresh_token(),
+        default=refresh_token_service.generate_refresh_token,
+        index=True,
         unique=True,
         nullable=False,
     )
@@ -53,10 +55,6 @@ class Session(db.Model):
     def calculate_expiration() -> datetime:
         expiration_time = env.SESSION_EXPIRATION_SECS
         return datetime.now(timezone.utc) + timedelta(seconds=expiration_time)
-
-    @staticmethod
-    def generate_refresh_token() -> str:
-        return secrets.token_urlsafe(64)
 
     def __repr__(self) -> str:
         return f"<Session {self.id}>"

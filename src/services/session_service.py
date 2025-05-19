@@ -4,7 +4,6 @@ from uuid import UUID
 
 import jwt
 from flask import Request, Response, g, request
-from sqlalchemy.exc import IntegrityError
 
 from src.dtos.jwt_payload import JwtPayload
 from src.dtos.session_data import SessionData
@@ -16,8 +15,7 @@ from ..exceptions.session_expired_exception import SessionExpiredException
 from ..exceptions.session_not_found_exception import SessionNotFoundException
 from ..libs.sqlalchemy import db
 from ..models.session import Session
-from ..models.user import User
-from . import user_service
+from . import refresh_token_service, user_service
 
 
 def create_session(user_id: UUID) -> Session:
@@ -158,13 +156,8 @@ def signin(username: str, password: str) -> None:
         set_new_tokens(auth_token, session.refresh_token)
 
 
-def validate_session(
-    *,
-    auth_token: str | None = None,
-    refresh_token: str | None = None,
-) -> None:
-    if not auth_token and not refresh_token:
-        auth_token, refresh_token = extract_session_tokens_from_request(request)
+def validate_session() -> None:
+    auth_token, refresh_token = extract_session_tokens_from_request(request)
 
     if auth_token:
         try:
@@ -211,7 +204,7 @@ def refresh_session(
                 db.session.delete(session)
             raise SessionExpiredException()
 
-        session.refresh_token = Session.generate_refresh_token()
+        session.refresh_token = refresh_token_service.generate_refresh_token()
         session.expires_at = Session.calculate_expiration()
         session.updated_at = datetime.now(timezone.utc)
         db.session.add(session)
