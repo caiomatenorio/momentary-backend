@@ -20,8 +20,6 @@ class Chat(db.Model):
         nullable=False,
     )
 
-    type: Mapped[ChatType] = mapped_column(Enum(ChatType), nullable=False)
-
     participants: Mapped[List["ChatParticipant"]] = relationship(  # type: ignore
         back_populates="chat",
         cascade="all, delete-orphan",
