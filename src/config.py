@@ -6,14 +6,14 @@ from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from marshmallow import ValidationError
 
-from .env import env
-from .error_handler import (
+from src.api.error_handler import (
     handle_http_exception,
     handle_unauthorized_exception,
     handle_validation_error,
 )
-from .exceptions.http_exceptions.http_exception import HttpException
-from .exceptions.http_exceptions.unauthorized_exception import UnauthorizedException
+from src.common.exception.http.http_exception import HttpException
+from src.common.exception.http.unauthorized_exception import UnauthorizedException
+from src.singleton.env import env
 
 
 def create_app(
