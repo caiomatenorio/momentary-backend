@@ -1,7 +1,7 @@
 from flask import request
 
 from ..blueprints.api import api
-from ..decorators.requires_rest_authentication import requires_rest_authentication
+from ..decorators.requires_rest_auth import requires_rest_auth
 from ..dtos.success_response_body import SuccessResponseBody
 from ..schemas.session_controller.signin_schema import SigninSchema
 from ..services import session_service
@@ -15,7 +15,7 @@ def signin():
 
 
 @api.post("/signout")
-@requires_rest_authentication
+@requires_rest_auth
 def signout():
     session_service.signout()
     return SuccessResponseBody(200, "User signed out successfully").to_response(

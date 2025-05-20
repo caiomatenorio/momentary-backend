@@ -7,21 +7,16 @@ from ..exceptions.http_exceptions.unauthorized_exception import UnauthorizedExce
 from ..services import session_service, socket_service
 
 
-def requires_socket_authentication(function: Callable) -> Callable:
-    """
-    Decorator to require socket authentication for an event handler (generally connect). The function requires the
-    `auth` parameter to be passed in the event handler.
-    """
-
+def handle_socket_with_auth_connection(function: Callable) -> Callable:
     @wraps(function)
     def wrapper(*args, **kwargs):
-
         try:
-            session_service.validate_session()
+            session_service.validate_session(request, for_socket=True)
         except UnauthorizedException:
+            # Refuse connection
             return False
 
-        socket_service.store_socket_session_data()
+        socket_service.set_socket_session(request)
         return function(*args, **kwargs)
 
     return wrapper

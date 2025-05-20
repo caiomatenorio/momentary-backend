@@ -1,14 +1,14 @@
+import json
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Literal, Optional, Union, overload
 from uuid import UUID
 
 import jwt
-from flask import Request, Response, g, request
+from flask import Request, Response, g
 
-from src.dtos.jwt_payload import JwtPayload
-from src.dtos.session_data import SessionData
-from src.dtos.user_data import UserData
-
+from ..dtos.jwt_payload import JwtPayload
+from ..dtos.session_data import SessionData
+from ..dtos.user_data import UserData
 from ..env import env
 from ..exceptions.http_exceptions.unauthorized_exception import UnauthorizedException
 from ..exceptions.session_expired_exception import SessionExpiredException
@@ -59,9 +59,23 @@ def set_new_tokens(auth_token: str, refresh_token: str) -> None:
     g.refresh_token = refresh_token
 
 
-def get_new_tokens() -> tuple[Optional[str], Optional[str]]:
+@overload
+def get_new_tokens() -> tuple[Optional[str], Optional[str]]: ...
+
+
+@overload
+def get_new_tokens(*, in_json: Literal[True]) -> str: ...
+
+
+def get_new_tokens(
+    *,
+    in_json: bool = False,
+) -> Union[str, tuple[Optional[str], Optional[str]]]:
     auth_token = g.get("auth_token")
     refresh_token = g.get("refresh_token")
+
+    if in_json:
+        return json.dumps({"auth_token": auth_token, "refresh_token": refresh_token})
 
     return auth_token, refresh_token
 
@@ -92,13 +106,33 @@ def extract_session_tokens_from_request(
     return auth_token, refresh_token
 
 
-def set_current_session_data(auth_token: str) -> None:
-    payload_data = decode_jwt(auth_token).data
+@overload
+def set_current_session_data(*, auth_token: str) -> None: ...
 
-    g.current_session_id = payload_data.session_id
-    g.current_user_id = payload_data.user_data.user_id
-    g.current_username = payload_data.user_data.username
-    g.current_name = payload_data.user_data.name
+
+@overload
+def set_current_session_data(*, refresh_token) -> None: ...
+
+
+def set_current_session_data(
+    *, auth_token: Optional[str] = None, refresh_token: Optional[str] = None
+) -> None:
+    if auth_token:
+        payload_data = decode_jwt(auth_token).data
+
+        g.current_session_id = payload_data.session_id
+        g.current_user_id = payload_data.user_data.user_id
+        g.current_username = payload_data.user_data.username
+        g.current_name = payload_data.user_data.name
+    elif refresh_token:
+        session = get_session_by_refresh_token_or_raise(refresh_token)
+
+        g.current_session_id = session.id
+        g.current_user_id = session.user_id
+        g.current_username = session.user.username
+        g.current_name = session.user.name
+    else:
+        ValueError("It is required to insert either auth token or refresh token.")
 
 
 def get_current_session_data() -> SessionData:
@@ -143,8 +177,37 @@ def get_session_by_id_or_raise(
 
     if not session:
         raise SessionNotFoundException()
-
     return session
+
+
+def get_session_by_refresh_token(
+    refresh_token: str,
+    *,
+    for_update: bool = False,
+) -> Optional[Session]:
+    query = db.session.query(Session).filter_by(refresh_token=refresh_token)
+
+    if for_update:
+        query = query.with_for_update()
+
+    session = query.first()
+    return session
+
+
+def get_session_by_refresh_token_or_raise(
+    refresh_token: str,
+    *,
+    for_update: bool = False,
+) -> Session:
+    session = get_session_by_refresh_token(refresh_token, for_update=for_update)
+
+    if session is None:
+        raise SessionNotFoundException()
+    return session
+
+
+def validate_refresh_token(refresh_token: str) -> None:
+    get_session_by_refresh_token_or_raise(refresh_token)
 
 
 def signin(username: str, password: str) -> None:
@@ -156,21 +219,25 @@ def signin(username: str, password: str) -> None:
         set_new_tokens(auth_token, session.refresh_token)
 
 
-def validate_session() -> None:
+def validate_session(request: Request, *, for_socket: bool = False) -> None:
     auth_token, refresh_token = extract_session_tokens_from_request(request)
 
-    if auth_token:
+    if not for_socket and auth_token:
         try:
-            set_current_session_data(auth_token)
+            set_current_session_data(auth_token=auth_token)
             return
         except UnauthorizedException:  # If token is invalid or expired, try to refresh
             pass
 
     if refresh_token:
         try:
-            auth_token, refresh_token = refresh_session(refresh_token=refresh_token)
-            set_current_session_data(auth_token)
-            set_new_tokens(auth_token, refresh_token)
+            if for_socket:
+                validate_refresh_token(refresh_token)
+                set_current_session_data(refresh_token=refresh_token)
+            else:
+                auth_token, refresh_token = refresh_session(refresh_token=refresh_token)
+                set_current_session_data(auth_token=auth_token)
+                set_new_tokens(auth_token, refresh_token)
             return
         except (SessionNotFoundException, SessionExpiredException):
             pass
@@ -178,26 +245,9 @@ def validate_session() -> None:
     raise UnauthorizedException()
 
 
-def refresh_session(
-    *,
-    refresh_token: Optional[str] = None,
-    session_id: Optional[UUID] = None,
-) -> tuple[str, str]:
-    if not refresh_token and not session_id:
-        raise ValueError("Either refresh_token or session_id must be provided")
-
+def refresh_session(refresh_token: str) -> tuple[str, str]:
     with db.session.begin():
-        query = db.session.query(Session)
-
-        if refresh_token:
-            query = query.filter_by(refresh_token=refresh_token)
-        else:
-            query = query.filter_by(id=session_id)
-
-        session = query.with_for_update().first()
-
-        if not session:
-            raise SessionNotFoundException()
+        session = get_session_by_refresh_token_or_raise(refresh_token, for_update=True)
 
         if session.expires_at < datetime.now(timezone.utc):
             with db.session.begin_nested():
