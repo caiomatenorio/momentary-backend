@@ -11,10 +11,12 @@ from src.service import user_service
 
 @api_bp.get("users/me")
 @requires_auth
-def whoami():
-    user = user_service.whoami()
+def get_current_user():
+    user = user_service.get_current_user()
     return SuccessResponseBody(
-        200, "User information retrieved successfully", user
+        200,
+        "User information retrieved successfully",
+        user,
     ).to_response()
 
 
@@ -22,7 +24,7 @@ def whoami():
 @requires_auth
 def update_name():
     body = UpdateNameSchema().load(request.json)  # type: ignore
-    user_service.update_name(name=body.get("name"))  # type: ignore
+    user_service.update_name(name=body["name"])  # type: ignore
     return SuccessResponseBody(200, "User name updated successfully").to_response()
 
 
@@ -30,7 +32,7 @@ def update_name():
 @requires_auth
 def update_username():
     body = UpdateUsernameSchema().load(request.json)  # type: ignore
-    user_service.update_username(username=body.get("username"))  # type: ignore
+    user_service.update_username(username=body["username"])  # type: ignore
     return SuccessResponseBody(200, "User username updated successfully").to_response()
 
 
@@ -39,7 +41,7 @@ def update_username():
 def update_password():
     body = UpdatePasswordSchema().load(request.json)  # type: ignore
     user_service.update_password(
-        old_password=body.get("old_password"),  # type: ignore
-        new_password=body.get("new_password"),  # type: ignore
+        old_password=body["old_password"],  # type: ignore
+        new_password=body["new_password"],  # type: ignore
     )
     return SuccessResponseBody(200, "User password updated successfully").to_response()
