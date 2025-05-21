@@ -38,49 +38,23 @@ def set_socket_session() -> None:
     redis.expire(key, 60 * 60 * 24 * 30)  # 30 days
 
 
-@overload
-def get_socket_session() -> Optional[SessionData]: ...
-
-
-@overload
-def get_socket_session(*, raise_: Literal[True]) -> SessionData: ...
-
-
-@overload
-def get_socket_session(*, disconnect_: Literal[True]) -> SessionData: ...
-
-
-@overload
-def get_socket_session(
-    *,
-    raise_: bool,
-    disconnect_: bool,
-) -> Optional[SessionData]: ...
-
-
-def get_socket_session(
-    *,
-    raise_: bool = False,
-    disconnect_: bool = False,
-) -> Optional[SessionData]:
+def get_socket_session() -> Optional[SessionData]:
     socket_session: dict = redis.hgetall(f"socket_session:{get_sid()}")  # type: ignore
 
     if socket_session:
-        session_data = None
-
         try:
             session_data = SessionData.from_flattened(socket_session)
-        except Exception:
-            ...
-
-        if session_data:
             return session_data
-        elif raise_:
-            raise SocketSessionNotFoundException()
-        elif disconnect_:
-            emit("session_expired", {"message": "Sign in again to reconnect."})
-            disconnect()
-            raise SocketSessionNotFoundException()
+        except Exception:
+            pass
+
+
+def get_socket_session_or_raise() -> SessionData:
+    socket_session = get_socket_session()
+
+    if socket_session is None:
+        raise SocketSessionNotFoundException()
+    return socket_session
 
 
 def delete_socket_session() -> None:

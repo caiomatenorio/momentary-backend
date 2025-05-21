@@ -12,7 +12,7 @@ from src.service import chat_service
 @api_bp.get("chats")
 @requires_auth
 def get_all_chats():
-    chats = chat_service.get_all_current_user_chats()
+    chats = chat_service.get_all_chats()
     response_data = list(map(GetChatResponseDto.from_chat, chats))
 
     return SuccessResponseBody(
