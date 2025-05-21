@@ -5,14 +5,14 @@ from src.model.message import Message
 
 
 @dataclass
-class SendMessageResponseDto:
+class NewMessageDto:
     id: str
     sender_id: tuple[str, str]
     content: str
 
     @staticmethod
-    def from_message(message: Message) -> "SendMessageResponseDto":
-        return SendMessageResponseDto(
+    def from_message(message: Message) -> "NewMessageDto":
+        return NewMessageDto(
             id=str(message.id),
             sender_id=(str(message.sender_id[0]), str(message.sender_id[1])),
             content=message.content,

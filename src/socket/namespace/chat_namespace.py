@@ -1,5 +1,4 @@
-from flask_socketio import Namespace, emit, send
-from marshmallow import ValidationError
+from flask_socketio import Namespace, emit
 
 from src.service import chat_service
 from src.socket.decorator.handle_auth_namespace_connection import (
@@ -8,7 +7,7 @@ from src.socket.decorator.handle_auth_namespace_connection import (
 from src.socket.decorator.handle_auth_namespace_disconnection import (
     handle_auth_namespace_disconnection,
 )
-from src.socket.dto.chat.send_message_response_dto import SendMessageResponseDto
+from src.socket.dto.chat.new_message_dto import NewMessageDto
 from src.socket.error_handler import error_handler
 from src.socket.response_body import ResponseBody
 from src.socket.schema.chat.send_message_schema import SendMessageSchema
@@ -23,7 +22,7 @@ class ChatNamespace(Namespace):
         try:
             data = SendMessageSchema().load(data)
             message = chat_service.send_message(data["chat_id"], data["content"])  # type: ignore
-            response_data = SendMessageResponseDto.from_message(message)
+            response_data = NewMessageDto.from_message(message)
 
             emit(
                 "new_message",
