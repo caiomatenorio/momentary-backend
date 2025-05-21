@@ -1,8 +1,8 @@
 """init
 
-Revision ID: a94e242f4842
+Revision ID: 8b0120dfb7f6
 Revises: 
-Create Date: 2025-05-20 18:02:52.776337
+Create Date: 2025-05-21 08:37:24.665127
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'a94e242f4842'
+revision = '8b0120dfb7f6'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -33,13 +33,11 @@ def upgrade():
     sa.UniqueConstraint('username')
     )
     op.create_table('chat_participants',
-    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('chat_id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.ForeignKeyConstraint(['chat_id'], ['chats.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('id')
+    sa.PrimaryKeyConstraint('chat_id', 'user_id')
     )
     op.create_table('sessions',
     sa.Column('id', sa.UUID(), nullable=False),
@@ -58,12 +56,13 @@ def upgrade():
     op.create_table('messages',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('chat_id', sa.UUID(), nullable=False),
-    sa.Column('sender_id', sa.UUID(), nullable=False),
+    sa.Column('sender_user_id', sa.Uuid(), nullable=False),
+    sa.Column('sender_chat_id', sa.Uuid(), nullable=False),
     sa.Column('content', sa.String(), nullable=False),
     sa.Column('timestamp', sa.DateTime(timezone=True), nullable=False),
     sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['chat_id'], ['chats.id'], ),
-    sa.ForeignKeyConstraint(['sender_id'], ['chat_participants.id'], ),
+    sa.ForeignKeyConstraint(['sender_chat_id', 'sender_user_id'], ['chat_participants.chat_id', 'chat_participants.user_id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('id')
     )

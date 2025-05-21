@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from src.common.exception.http.direct_chat_already_exists_exception import (
@@ -38,7 +38,10 @@ def create_direct_chat(contact_username: str) -> UUID:
             user_service.get_current_user().user_id,
             for_update=True,
         )
-        contact_user = user_service.get_user_by_username_or_raise(contact_username)
+        contact_user = user_service.get_user_by_username_or_raise(
+            contact_username,
+            for_update=True,
+        )
 
         if get_direct_chat_by_participants({current_user.id, contact_user.id}):
             raise DirectChatAlreadyExistsException()
@@ -53,3 +56,14 @@ def create_direct_chat(contact_username: str) -> UUID:
         db.session.add(chat)
 
     return chat.id
+
+
+def get_all_current_user_chats() -> List[Chat]:
+    current_user_id = user_service.get_current_user().user_id
+    chats = (
+        db.session.query(Chat)
+        .join(ChatParticipant)
+        .filter(ChatParticipant.user_id == current_user_id)
+        .all()
+    )
+    return chats

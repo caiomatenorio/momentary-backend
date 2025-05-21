@@ -165,7 +165,13 @@ def get_session_by_id(
         query = query.with_for_update()
 
     session = query.first()
-    return session
+
+    if session:
+        try:
+            validate_not_expired_session(session)
+            return session
+        except SessionExpiredException:
+            pass
 
 
 def get_session_by_id_or_raise(
@@ -191,7 +197,13 @@ def get_session_by_refresh_token(
         query = query.with_for_update()
 
     session = query.first()
-    return session
+
+    if session:
+        try:
+            validate_not_expired_session(session)
+            return session
+        except SessionExpiredException:
+            pass
 
 
 def get_session_by_refresh_token_or_raise(
@@ -236,14 +248,32 @@ def validate_session(request: Request, *, for_socket: bool = False) -> None:
     raise UnauthorizedException()
 
 
+@overload
+def validate_not_expired_session(session: Session) -> None: ...
+
+
+@overload
+def validate_not_expired_session(
+    session: Session,
+    *,
+    nested: Literal[True],
+) -> None: ...
+
+
+def validate_not_expired_session(session: Session, *, nested: bool = False) -> None:
+    if session.expires_at < datetime.now(timezone.utc):
+        if nested:
+            delete_session(session=session, nested=True)
+        else:
+            delete_session(session=session)
+
+        raise SessionExpiredException()
+
+
 def refresh_session(refresh_token: str) -> tuple[str, str]:
     with db.session.begin():
         session = get_session_by_refresh_token_or_raise(refresh_token, for_update=True)
-
-        if session.expires_at < datetime.now(timezone.utc):
-            with db.session.begin_nested():
-                db.session.delete(session)
-            raise SessionExpiredException()
+        validate_not_expired_session(session, nested=True)
 
         session.refresh_token = Session.generate_refresh_token()
         session.expires_at = Session.calculate_expiration()
