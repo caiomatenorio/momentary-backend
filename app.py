@@ -1,13 +1,15 @@
-from src.blueprints.api import api
-from src.config import create_app
-from src.libs.marshmallow import marshmallow
-from src.libs.migrate import migrate
-from src.libs.scheduler import scheduler
-from src.libs.socketio import socketio
-from src.libs.sqlalchemy import db
-
-app = create_app(db, migrate, socketio, marshmallow, scheduler, api)
+from src.singleton.app import app
+from src.singleton.env import env
+from src.singleton.socketio import socketio
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True)
+    import eventlet
+
+    match env.FLASK_ENV:
+        case "development":
+            import eventlet.wsgi  # development server
+        case "production":
+            import gunicorn  # production server
+
+    socketio.run(app, debug=True, host="0.0.0.0", port=5000)
     print("Server started.")

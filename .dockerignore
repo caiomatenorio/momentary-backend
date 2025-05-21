@@ -1,0 +1,38 @@
+# Ignorar ambientes virtuais locais
+.venv
+venv
+env
+ENV
+env.bak
+venv.bak
+
+# Ignorar arquivos compilados Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorar caches e diretórios de build
+*.egg-info
+dist
+build
+.eggs
+
+# Ignorar arquivos de logs e temporários
+*.log
+*.tmp
+*.swp
+*.swo
+*.DS_Store
+
+# Ignorar controle de versão
+.git
+.gitignore
+
+# Ignorar arquivos de IDE/editor
+.vscode/
+.idea/
+*.iml
+
+# Ignorar arquivos de configuração local, se houver
+.local/
