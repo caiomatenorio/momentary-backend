@@ -6,7 +6,7 @@ from src.common.exception.http.direct_chat_already_exists_exception import (
 )
 from src.model.chat import Chat
 from src.model.chat_participant import ChatParticipant
-from src.service import user_service
+from src.service import socket_service, user_service
 from src.singleton.db import db
 
 
@@ -58,12 +58,30 @@ def create_direct_chat(contact_username: str) -> UUID:
     return chat.id
 
 
-def get_all_current_user_chats() -> List[Chat]:
-    current_user_id = user_service.get_current_user().user_id
+def get_all_current_user_chats(*, for_socket: bool = False) -> List[Chat]:
+    if for_socket:
+        current_user_id = socket_service.get_socket_session(
+            disconnect_=True
+        ).user_data.user_id
+    else:
+        current_user_id = user_service.get_current_user().user_id
+
     chats = (
         db.session.query(Chat)
         .join(ChatParticipant)
         .filter(ChatParticipant.user_id == current_user_id)
         .all()
     )
+
     return chats
+
+
+def connect_to_chat(chat: Chat) -> None:
+    socket_service.connect_to_room(str(chat.id))
+
+
+def connect_to_all_chats() -> None:
+    chats = get_all_current_user_chats(for_socket=True)
+
+    for chat in chats:
+        connect_to_chat(chat)

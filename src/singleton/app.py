@@ -14,7 +14,7 @@ from src.singleton.marshmallow import marshmallow
 from src.singleton.migrate import migrate
 from src.singleton.scheduler import scheduler
 from src.singleton.socketio import socketio
-from src.socket.namespace.message_namespace import MessageNamespace
+from src.socket.namespace.chat_namespace import ChatNamespace
 
 error_handlers = {
     HttpException: handle_http_exception,
@@ -23,7 +23,7 @@ error_handlers = {
 }
 
 namespaces = {
-    "/sockets/messages": MessageNamespace,
+    "/sockets/chats": ChatNamespace,
 }
 
 app = create_app(

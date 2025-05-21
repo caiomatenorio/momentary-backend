@@ -4,7 +4,7 @@ from typing import Literal, Optional, Union, overload
 from uuid import UUID
 
 import jwt
-from flask import Request, Response, g
+from flask import Response, g, request
 
 from src.common.dto.jwt_payload import JwtPayload
 from src.common.dto.session_data import SessionData
@@ -95,9 +95,7 @@ def add_clear_session_headers(response: Response) -> None:
     response.headers.add("Authorization", None)
 
 
-def extract_session_tokens_from_request(
-    request: Request,
-) -> tuple[Optional[str], Optional[str]]:
+def extract_session_tokens_from_request() -> tuple[Optional[str], Optional[str]]:
     auth_token, refresh_token = None, None
     authorization = request.headers.get("Authorization")
 
@@ -226,8 +224,8 @@ def validate_refresh_token(refresh_token: str) -> None:
     get_session_by_refresh_token_or_raise(refresh_token)
 
 
-def validate_session(request: Request, *, for_socket: bool = False) -> None:
-    auth_token, refresh_token = extract_session_tokens_from_request(request)
+def validate_session(*, for_socket: bool = False) -> None:
+    auth_token, refresh_token = extract_session_tokens_from_request()
 
     if not for_socket and auth_token:
         try:

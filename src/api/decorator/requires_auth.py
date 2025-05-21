@@ -9,7 +9,7 @@ from src.service import session_service
 def requires_auth(function: Callable) -> Callable:
     @wraps(function)
     def wrapper(*args, **kwargs):
-        session_service.validate_session(request)
+        session_service.validate_session()
         return function(*args, **kwargs)
 
     return wrapper

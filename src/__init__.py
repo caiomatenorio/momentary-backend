@@ -1,1 +1,1 @@
-from . import api, model, schedule, singleton, socket
+from . import api, model, schedule, singleton

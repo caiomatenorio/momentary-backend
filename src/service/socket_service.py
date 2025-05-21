@@ -1,16 +1,12 @@
-from typing import Optional, overload
+from typing import Literal, Optional, overload
 
-from flask import Request, request
-from flask_socketio import disconnect, emit
+from flask import request
+from flask_socketio import disconnect, emit, join_room
 
 from src.common.dto.session_data import SessionData
-from src.common.dto.user_data import UserData
-from src.common.exception.http.unauthorized_exception import UnauthorizedException
 from src.common.exception.namespace_access_outside_socket_exception import (
     NamespaceAccessOutsideSocketException,
 )
-from src.common.exception.session_expired_exception import SessionExpiredException
-from src.common.exception.session_not_found_exception import SessionNotFoundException
 from src.common.exception.sid_access_outside_socket_exception import (
     SidAccessOutsideSocketException,
 )
@@ -19,7 +15,7 @@ from src.service import session_service
 from src.singleton.redis import redis
 
 
-def get_sid(request: Request) -> str:
+def get_sid() -> str:
     sid: str | None = request.sid  # type: ignore
 
     if sid is None:
@@ -27,7 +23,7 @@ def get_sid(request: Request) -> str:
     return sid
 
 
-def get_namespace(request: Request) -> str:
+def get_namespace() -> str:
     namespace: str | None = request.namespace  # type: ignore
 
     if namespace is None:
@@ -35,19 +31,41 @@ def get_namespace(request: Request) -> str:
     return namespace
 
 
-def set_socket_session(request: Request) -> None:
+def set_socket_session() -> None:
     session_data = session_service.get_current_session_data().flatten()
-    redis.hset(
-        f"socket_session:{get_sid(request)}",
-        mapping=session_data,
-    )
+    key = f"socket_session:{get_sid()}"
+    redis.hset(key, mapping=session_data)
+    redis.expire(key, 60 * 60 * 24 * 30)  # 30 days
 
 
-def get_socket_session(request: Request) -> Optional[tuple[str, SessionData]]:
-    socket_session: dict = redis.hgetall(f"socket_session:{get_sid(request)}")  # type: ignore
+@overload
+def get_socket_session() -> Optional[SessionData]: ...
+
+
+@overload
+def get_socket_session(*, raise_: Literal[True]) -> SessionData: ...
+
+
+@overload
+def get_socket_session(*, disconnect_: Literal[True]) -> SessionData: ...
+
+
+@overload
+def get_socket_session(
+    *,
+    raise_: bool,
+    disconnect_: bool,
+) -> Optional[SessionData]: ...
+
+
+def get_socket_session(
+    *,
+    raise_: bool = False,
+    disconnect_: bool = False,
+) -> Optional[SessionData]:
+    socket_session: dict = redis.hgetall(f"socket_session:{get_sid()}")  # type: ignore
 
     if socket_session:
-        refresh_token = socket_session.pop("refresh_token", None)
         session_data = None
 
         try:
@@ -55,17 +73,19 @@ def get_socket_session(request: Request) -> Optional[tuple[str, SessionData]]:
         except Exception:
             ...
 
-        if refresh_token and session_data:
-            return refresh_token, session_data
+        if session_data:
+            return session_data
+        elif raise_:
+            raise SocketSessionNotFoundException()
+        elif disconnect_:
+            emit("session_expired", {"message": "Sign in again to reconnect."})
+            disconnect()
+            raise SocketSessionNotFoundException()
 
 
-def get_socket_session_or_raise(request: Request) -> tuple[str, SessionData]:
-    socket_session = get_socket_session(request)
-
-    if socket_session is None:
-        raise SocketSessionNotFoundException()
-    return socket_session
+def delete_socket_session() -> None:
+    redis.delete(f"socket_session:{get_sid()}")
 
 
-def delete_socket_session(request: Request) -> None:
-    redis.delete(f"socket_session:{get_sid(request)}")
+def connect_to_room(room: str) -> None:
+    join_room(room)
