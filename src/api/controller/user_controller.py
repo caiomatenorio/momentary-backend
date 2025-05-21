@@ -22,7 +22,7 @@ def get_current_user():
 
     return SuccessResponseBody(
         200,
-        "User information retrieved successfully",
+        "User information retrieved successfully.",
         response_data,
     ).to_response()
 
@@ -33,7 +33,7 @@ def update_name():
     body = UpdateNameSchema().load(request.json)  # type: ignore
     user_service.update_name(name=body["name"])  # type: ignore
 
-    return SuccessResponseBody(200, "User name updated successfully").to_response()
+    return SuccessResponseBody(200, "User name updated successfully.").to_response()
 
 
 @api_bp.put("users/me/username")
@@ -42,7 +42,7 @@ def update_username():
     body = UpdateUsernameSchema().load(request.json)  # type: ignore
     user_service.update_username(username=body["username"])  # type: ignore
 
-    return SuccessResponseBody(200, "User username updated successfully").to_response()
+    return SuccessResponseBody(200, "User username updated successfully.").to_response()
 
 
 @api_bp.put("users/me/password")
@@ -54,4 +54,4 @@ def update_password():
         new_password=body["new_password"],  # type: ignore
     )
 
-    return SuccessResponseBody(200, "User password updated successfully").to_response()
+    return SuccessResponseBody(200, "User password updated successfully.").to_response()
