@@ -6,10 +6,11 @@ from src.api.dto.chat.create_chat_response_dto import CreateChatResponseDto
 from src.api.dto.chat.get_chat_response_dto import GetChatResponseDto
 from src.api.response_body.success_response_body import SuccessResponseBody
 from src.api.schema.chat.create_direct_chat_schema import CreateDirectChatSchema
+from src.api.schema.chat.get_chat_by_id_schema import GetChatByIdSchema
 from src.service import chat_service
 
 
-@api_bp.get("chats")
+@api_bp.get("/chats")
 @requires_auth
 def get_all_chats():
     chats = chat_service.get_all_chats()
@@ -22,7 +23,21 @@ def get_all_chats():
     ).to_response()
 
 
-@api_bp.post("chats/direct")
+@api_bp.get("/chats/<chat_id>")
+@requires_auth
+def get_chat_by_id(chat_id: str):
+    params = GetChatByIdSchema().load({"chat_id": chat_id})
+    chat = chat_service.get_chat_by_id_or_raise(params["chat_id"])  # type: ignore
+    response_data = GetChatResponseDto.from_chat(chat)
+
+    return SuccessResponseBody(
+        200,
+        "Chat retrieved successfully.",
+        response_data,
+    ).to_response()
+
+
+@api_bp.post("/chats/direct")
 @requires_auth
 def create_direct_chat():
     body = CreateDirectChatSchema().load(request.json)  # type: ignore

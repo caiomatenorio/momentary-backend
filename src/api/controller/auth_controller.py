@@ -8,7 +8,7 @@ from src.api.schema.auth.signup_schema import SignupSchema
 from src.service import auth_service
 
 
-@api_bp.post("auth/signup")
+@api_bp.post("/auth/signup")
 def signup():
     body = SignupSchema().load(request.json)  # type: ignore
     auth_service.signup(
@@ -19,14 +19,14 @@ def signup():
     return SuccessResponseBody(201, "User created successfully.").to_response()
 
 
-@api_bp.post("auth/signin")
+@api_bp.post("/auth/signin")
 def signin():
     body = SigninSchema().load(request.json)  # type: ignore
     auth_service.signin(username=body["username"], password=body["password"])  # type: ignore
     return SuccessResponseBody(200, "User signed in successfully.").to_response()
 
 
-@api_bp.post("auth/signout")
+@api_bp.post("/auth/signout")
 @requires_auth
 def signout():
     auth_service.signout()

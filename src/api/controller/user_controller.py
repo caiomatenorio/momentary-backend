@@ -10,7 +10,7 @@ from src.api.schema.user.update_username_schema import UpdateUsernameSchema
 from src.service import user_service
 
 
-@api_bp.get("users/me")
+@api_bp.get("/users/me")
 @requires_auth
 def get_current_user():
     user = user_service.get_current_user()
@@ -27,7 +27,7 @@ def get_current_user():
     ).to_response()
 
 
-@api_bp.put("users/me/name")
+@api_bp.put("/users/me/name")
 @requires_auth
 def update_name():
     body = UpdateNameSchema().load(request.json)  # type: ignore
@@ -36,7 +36,7 @@ def update_name():
     return SuccessResponseBody(200, "User name updated successfully.").to_response()
 
 
-@api_bp.put("users/me/username")
+@api_bp.put("/users/me/username")
 @requires_auth
 def update_username():
     body = UpdateUsernameSchema().load(request.json)  # type: ignore
@@ -45,7 +45,7 @@ def update_username():
     return SuccessResponseBody(200, "User username updated successfully.").to_response()
 
 
-@api_bp.put("users/me/password")
+@api_bp.put("/users/me/password")
 @requires_auth
 def update_password():
     body = UpdatePasswordSchema().load(request.json)  # type: ignore
