@@ -7,7 +7,7 @@ from src.common.exception.http.unauthorized_exception import UnauthorizedExcepti
 from src.service import session_service, socket_service
 
 
-def handle_private_namespace_connection(function: Callable) -> Callable:
+def handle_auth_namespace_connection(function: Callable) -> Callable:
     @wraps(function)
     def wrapper(*args, **kwargs):
         try:

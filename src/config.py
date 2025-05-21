@@ -1,18 +1,12 @@
+from typing import Callable, Union
+
 from flask import Blueprint, Flask
 from flask_apscheduler import APScheduler
 from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
 from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
-from marshmallow import ValidationError
 
-from src.api.error_handler import (
-    handle_http_exception,
-    handle_unauthorized_exception,
-    handle_validation_error,
-)
-from src.common.exception.http.http_exception import HttpException
-from src.common.exception.http.unauthorized_exception import UnauthorizedException
 from src.singleton.env import env
 
 
@@ -23,6 +17,8 @@ def create_app(
     marshmallow: Marshmallow,
     scheduler: APScheduler,
     bp: Blueprint,
+    error_handlers: dict[Union[type[Exception], int], Callable],
+    namespaces: dict[str, type],
 ) -> Flask:
     app = Flask(__name__)
 
@@ -44,9 +40,12 @@ def create_app(
     # Register blueprints
     app.register_blueprint(bp)
 
-    # Register error handlers
-    app.register_error_handler(HttpException, handle_http_exception)
-    app.register_error_handler(ValidationError, handle_validation_error)
-    app.register_error_handler(UnauthorizedException, handle_unauthorized_exception)
+    # Register API error handlers
+    for exception_or_code, handler in error_handlers.items():
+        app.register_error_handler(exception_or_code, handler)
+
+    # Register namespaces
+    for path, namespace in namespaces.items():
+        socketio.on_namespace(namespace(path))
 
     return app

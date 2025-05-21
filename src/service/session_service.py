@@ -64,18 +64,22 @@ def get_new_tokens() -> tuple[Optional[str], Optional[str]]: ...
 
 
 @overload
-def get_new_tokens(*, in_json: Literal[True]) -> str: ...
+def get_new_tokens(*, in_json: Literal[True]) -> Optional[str]: ...
 
 
 def get_new_tokens(
     *,
     in_json: bool = False,
-) -> Union[str, tuple[Optional[str], Optional[str]]]:
+) -> Union[Optional[str], tuple[Optional[str], Optional[str]]]:
     auth_token = g.get("auth_token")
     refresh_token = g.get("refresh_token")
 
     if in_json:
-        return json.dumps({"auth_token": auth_token, "refresh_token": refresh_token})
+        return (
+            json.dumps({"auth_token": auth_token, "refresh_token": refresh_token})
+            if auth_token and refresh_token
+            else None
+        )
 
     return auth_token, refresh_token
 

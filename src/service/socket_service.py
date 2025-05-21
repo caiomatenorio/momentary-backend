@@ -1,7 +1,7 @@
 from typing import Optional, overload
 
-from flask import Request
-from flask_socketio import disconnect
+from flask import Request, request
+from flask_socketio import disconnect, emit
 
 from src.common.dto.session_data import SessionData
 from src.common.dto.user_data import UserData
@@ -35,39 +35,11 @@ def get_namespace(request: Request) -> str:
     return namespace
 
 
-@overload
-def set_socket_session(request: Request) -> None: ...
-
-
-@overload
-def set_socket_session(request: Request, refresh_token: str) -> None: ...
-
-
-def set_socket_session(request: Request, refresh_token: Optional[str] = None) -> None:
-    if refresh_token is None:
-        _, refresh_token = session_service.extract_session_tokens_from_request(request)
-
-        if refresh_token is None:  # If it's still None
-            raise UnauthorizedException()
-
-        session_data = session_service.get_current_session_data().flatten()
-    else:
-        session = session_service.get_session_by_refresh_token_or_raise(refresh_token)
-        session_data = SessionData(
-            session_id=session.id,
-            user_data=UserData(
-                user_id=session.user_id,
-                username=session.user.username,
-                name=session.user.name,
-            ),
-        ).flatten()
-
+def set_socket_session(request: Request) -> None:
+    session_data = session_service.get_current_session_data().flatten()
     redis.hset(
         f"socket_session:{get_sid(request)}",
-        mapping={
-            "refresh_token": refresh_token,
-            **session_data,
-        },
+        mapping=session_data,
     )
 
 
@@ -93,25 +65,6 @@ def get_socket_session_or_raise(request: Request) -> tuple[str, SessionData]:
     if socket_session is None:
         raise SocketSessionNotFoundException()
     return socket_session
-
-
-def refresh_socket_session(request: Request) -> bool:
-    try:
-        refresh_token, _ = get_socket_session_or_raise(request)
-        auth_token, refresh_token = session_service.refresh_session(refresh_token)
-        set_socket_session(request, refresh_token)
-        session_service.set_new_tokens(
-            auth_token=auth_token,
-            refresh_token=refresh_token,
-        )
-        return True
-    except (
-        SocketSessionNotFoundException,
-        SessionNotFoundException,
-        SessionExpiredException,
-    ):
-        disconnect()
-        return False
 
 
 def delete_socket_session(request: Request) -> None:
