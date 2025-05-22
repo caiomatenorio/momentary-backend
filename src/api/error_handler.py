@@ -15,3 +15,7 @@ def handle_validation_error(e: ValidationError):
 
 def handle_unauthorized_exception(e: UnauthorizedException):
     return ErrorResponseBody(e.status_code, e.message).to_response(clear_session=True)
+
+
+def handle_exception(e: Exception):
+    return ErrorResponseBody(500, "Internal server error").to_response()
