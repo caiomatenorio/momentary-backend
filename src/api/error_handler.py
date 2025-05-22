@@ -3,6 +3,7 @@ from marshmallow import ValidationError
 from src.api.response_body.error_response_body import ErrorResponseBody
 from src.common.exception.http.http_exception import HttpException
 from src.common.exception.http.unauthorized_exception import UnauthorizedException
+from src.singleton.env import env
 
 
 def handle_http_exception(e: HttpException):
@@ -18,4 +19,8 @@ def handle_unauthorized_exception(e: UnauthorizedException):
 
 
 def handle_exception(e: Exception):
-    return ErrorResponseBody(500, "Internal server error").to_response()
+    return (
+        ErrorResponseBody(500, "Internal server error").to_response()
+        if env.FLASK_ENV == "production"
+        else ErrorResponseBody(500, str(e)).to_response()
+    )
