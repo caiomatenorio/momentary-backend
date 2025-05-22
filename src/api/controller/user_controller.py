@@ -31,7 +31,7 @@ def get_current_user():
 @requires_auth
 def update_name():
     body = UpdateNameSchema().load(request.json)  # type: ignore
-    user_service.update_name(name=body["name"])  # type: ignore
+    user_service.update_name(new_name=body["name"])  # type: ignore
 
     return SuccessResponseBody(200, "User name updated successfully.").to_response()
 
