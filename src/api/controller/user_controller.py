@@ -40,7 +40,7 @@ def update_name():
 @requires_auth
 def update_username():
     body = UpdateUsernameSchema().load(request.json)  # type: ignore
-    user_service.update_username(username=body["username"])  # type: ignore
+    user_service.update_username(new_username=body["username"])  # type: ignore
 
     return SuccessResponseBody(200, "User username updated successfully.").to_response()
 
